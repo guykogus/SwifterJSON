@@ -1,12 +1,12 @@
 //
 //  JSONTests.swift
-//  CodableJSONTests
+//  SwifterJSONTests
 //
 //  Created by Guy Kogus on 22/12/2018.
 //  Copyright © 2018 Guy Kogus. All rights reserved.
 //
 
-@testable import CodableJSON
+@testable import SwifterJSON
 import XCTest
 
 class JSONTests: XCTestCase {

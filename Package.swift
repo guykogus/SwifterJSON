@@ -3,7 +3,7 @@
 import PackageDescription
 
 let package = Package(
-    name: "CodableJSON",
+    name: "SwifterJSON",
     platforms: [
         .iOS(.v12),
         .macOS(.v10_13),
@@ -13,17 +13,17 @@ let package = Package(
     ],
     products: [
         .library(
-            name: "CodableJSON",
-            targets: ["CodableJSON"]
+            name: "SwifterJSON",
+            targets: ["SwifterJSON"]
         ),
     ],
     targets: [
         .target(
-            name: "CodableJSON"
+            name: "SwifterJSON"
         ),
         .testTarget(
-            name: "CodableJSONTests",
-            dependencies: ["CodableJSON"]
+            name: "SwifterJSONTests",
+            dependencies: ["SwifterJSON"]
         ),
     ]
 )

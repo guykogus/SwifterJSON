@@ -1,4 +1,4 @@
-# CodableJSON
+# SwifterJSON
 
 [![SPM compatible](https://img.shields.io/badge/SPM-Compatible-brightgreen.svg?style=flat)](https://swift.org/package-manager/)
 
@@ -57,9 +57,9 @@ if var apple = companies["Apple"] as? [String: Any],
 }
 ```
 
-### Using `CodableJSON`
+### Using `SwifterJSON`
 
-Since JSON has a fixed set of types there's no need to perform all these casts in long form. `CodableJSON` uses an `enum` to store each type. With the aid of some helper functions, accessing the JSON values is now significantly shorter and easier.
+Since JSON has a fixed set of types there's no need to perform all these casts in long form. `SwifterJSON` uses an `enum` to store each type. With the aid of some helper functions, accessing the JSON values is now significantly shorter and easier.
 
 ```Swift
 let companies = try JSONDecoder().decode(JSON.self, from: companiesData)
@@ -82,7 +82,7 @@ companies["Apple"]?["address"]?["state"] = "California"
 <details>
 <summary>Swift Package Manager</summary>
 </br>
-<p>You can use <a href="https://swift.org/package-manager">The Swift Package Manager</a> to install <code>CodableJSON</code> by adding the proper description to your <code>Package.swift</code> file:</p>
+<p>You can use <a href="https://swift.org/package-manager">The Swift Package Manager</a> to install <code>SwifterJSON</code> by adding the proper description to your <code>Package.swift</code> file:</p>
 
 <pre><code class="swift language-swift">import PackageDescription
 
@@ -90,16 +90,16 @@ let package = Package(
     name: "YOUR_PROJECT_NAME",
     targets: [],
     dependencies: [
-        .package(url: "https://github.com/guykogus/CodableJSON.git", from: "1.2.0")
+        .package(url: "https://github.com/guykogus/SwifterJSON.git", from: "1.2.0")
     ]
 )
 </code></pre>
 
-<p>Next, add <code>CodableJSON</code> to your targets dependencies like so:</p>
+<p>Next, add <code>SwifterJSON</code> to your targets dependencies like so:</p>
 <pre><code class="swift language-swift">.target(
     name: "YOUR_TARGET_NAME",
     dependencies: [
-        "CodableJSON",
+        "SwifterJSON",
     ]
 ),</code></pre>
 <p>Then run <code>swift package update</code>.</p>
@@ -107,4 +107,4 @@ let package = Package(
 
 # License
 
-CodableJSON is available under the MIT license. See the LICENSE file for more info.
+SwifterJSON is available under the MIT license. See the LICENSE file for more info.
