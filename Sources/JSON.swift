@@ -45,7 +45,7 @@ public extension JSON {
     ///
     /// - Parameter value: Any value representable by `BinaryInteger`.
     init(_ value: some BinaryInteger) {
-        self = .int(.init(value))
+        self = .int(Int(value))
     }
 
     /// Initialise a floating point value.
@@ -59,7 +59,7 @@ public extension JSON {
     ///
     /// - Parameter value: Any value representable by `BinaryFloatingPoint`.
     init(_ value: some BinaryFloatingPoint) {
-        self = .double(.init(value))
+        self = .double(Double(value))
     }
 
     /// Initialise a string value.
@@ -73,7 +73,7 @@ public extension JSON {
     ///
     /// - Parameter value: Any value representable by `StringProtocol`.
     init(_ value: some StringProtocol) {
-        self = .string(.init(value))
+        self = .string(String(value))
     }
 
     /// Initialise an array of JSON objects.
@@ -87,7 +87,7 @@ public extension JSON {
     ///
     /// - Parameter value: A `Sequence` of `JSON` objects.
     init(_ value: some Sequence<JSON>) {
-        self = .array(.init(value))
+        self = .array([JSON](value))
     }
 
     /// Initialise a dictionary of string keys to JSON objects.
@@ -386,8 +386,8 @@ public extension JSON {
             self = .null
         case let intValue as Int:
             self = .int(intValue)
-        case let intValue as Double:
-            self = .double(intValue)
+        case let doubleValue as Double:
+            self = .double(doubleValue)
         case let boolValue as Bool:
             self = .bool(boolValue)
         case let stringValue as String:
@@ -490,6 +490,6 @@ extension JSON: ExpressibleByArrayLiteral {
 
 extension JSON: ExpressibleByDictionaryLiteral {
     public init(dictionaryLiteral elements: (String, JSON)...) {
-        self = .object(.init(uniqueKeysWithValues: elements))
+        self = .object([String: JSON](uniqueKeysWithValues: elements))
     }
 }

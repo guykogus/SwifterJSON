@@ -9,7 +9,7 @@
 @testable import SwifterJSON
 import XCTest
 
-class JSONTests: XCTestCase {
+final class JSONTests: XCTestCase {
     enum Dummy {
         static let null = JSON.null
         static let bool = JSON.bool(false)
@@ -262,7 +262,7 @@ class JSONTests: XCTestCase {
 
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.sortedKeys]
-        XCTAssertEqual(String(data: try encoder.encode(jsonValue), encoding: .utf8),
+        XCTAssertEqual(try String(data: encoder.encode(jsonValue), encoding: .utf8),
                        stringValue)
     }
 

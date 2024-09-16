@@ -1,5 +1,7 @@
 disabled_rules:
   - opening_brace
   - trailing_comma
+  - file_length
+  - line_length
+  - type_body_length
 
-line_length: 150
