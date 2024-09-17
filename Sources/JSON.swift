@@ -332,7 +332,7 @@ public extension JSON {
     /// - Parameters:
     ///   - jsonString: The JSON string to decode.
     ///   - decoder: The JSON decoder that will convert the JSON data.
-    /// - Throws: `JSONStringError.nonUtf8Json` if the string cannot be converted to UTF-8 data.
+    /// - Throws: `JSONStringError.nonUtf8Json` if the string is not encoded as UTF-8.
     init(jsonString: String, decoder: JSONDecoder = JSONDecoder()) throws {
         guard let jsonData = jsonString.data(using: .utf8) else {
             throw JSONStringError.nonUtf8Json
