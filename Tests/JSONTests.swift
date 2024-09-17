@@ -309,36 +309,40 @@ final class JSONTests: XCTestCase {
     }
 
     #if canImport(Foundation)
-    func testInitEncodableValue() {
-        do {
-            let encoder = JSONEncoder()
-            encoder.dateEncodingStrategy = .iso8601
-            encoder.keyEncodingStrategy = .convertToSnakeCase
-
-            let json = try JSON(encodableValue: Person.person, encoder: encoder)
-            XCTAssertEqual(json, Person.json)
-
-            let string = try JSON(encodableValue: JSON("foo"))
-            XCTAssertEqual(string, "foo")
-        } catch {
-            XCTFail(error.localizedDescription)
-        }
+    func testInitJsonData() throws {
+        let jsonString = "{\"foo\": \"bar\"}"
+        let string = try JSON(jsonData: jsonString.data(using: .utf8)!)
+        XCTAssertEqual(string.rawValue as? [String: String], ["foo": "bar"])
     }
 
-    func testDecode() {
-        do {
-            let decoder = JSONDecoder()
-            decoder.dateDecodingStrategy = .iso8601
-            decoder.keyDecodingStrategy = .convertFromSnakeCase
+    func testInitJsonString() throws {
+        let jsonString = "{\"foo\": \"bar\"}"
+        let string = try JSON(jsonString: jsonString)
+        XCTAssertEqual(string.rawValue as? [String: String], ["foo": "bar"])
+    }
 
-            let person = try Person.json.decode(Person.self, decoder: decoder)
-            XCTAssertEqual(person, Person.person)
+    func testInitEncodableValue() throws {
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        encoder.keyEncodingStrategy = .convertToSnakeCase
 
-            let string = try JSON("foo").decode() as String
-            XCTAssertEqual(string, "foo")
-        } catch {
-            XCTFail(error.localizedDescription)
-        }
+        let json = try JSON(encodableValue: Person.person, encoder: encoder)
+        XCTAssertEqual(json, Person.json)
+
+        let string = try JSON(encodableValue: JSON("foo"))
+        XCTAssertEqual(string, "foo")
+    }
+
+    func testDecode() throws {
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        decoder.keyDecodingStrategy = .convertFromSnakeCase
+
+        let person = try Person.json.decode(Person.self, decoder: decoder)
+        XCTAssertEqual(person, Person.person)
+
+        let string = try JSON("foo").decode() as String
+        XCTAssertEqual(string, "foo")
     }
     #endif
 }

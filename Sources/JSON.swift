@@ -313,6 +313,34 @@ extension JSON: Codable {
 #if canImport(Foundation)
 import Foundation
 
+// MARK: - JSON decoding
+
+public extension JSON {
+    enum JSONStringError: Error {
+        case nonUtf8Json
+    }
+
+    /// Initialise using raw JSON data.
+    /// - Parameters:
+    ///   - jsonData: The JSON data to decode.
+    ///   - decoder: The JSON decoder that will convert the JSON data.
+    init(jsonData: Data, decoder: JSONDecoder = JSONDecoder()) throws {
+        self = try decoder.decode(JSON.self, from: jsonData)
+    }
+
+    /// Initialise using a raw JSON string.
+    /// - Parameters:
+    ///   - jsonString: The JSON string to decode.
+    ///   - decoder: The JSON decoder that will convert the JSON data.
+    /// - Throws: `JSONStringError.nonUtf8Json` if the string cannot be converted to UTF-8 data.
+    init(jsonString: String, decoder: JSONDecoder = JSONDecoder()) throws {
+        guard let jsonData = jsonString.data(using: .utf8) else {
+            throw JSONStringError.nonUtf8Json
+        }
+        try self.init(jsonData: jsonData, decoder: decoder)
+    }
+}
+
 // MARK: - Codable Conversion
 
 // Convert between JSON and Codable types
@@ -327,7 +355,7 @@ public extension JSON {
 
     /// Returns a value of the type you specify, decoded from a JSON object.
     /// - Parameter type: The type of the value to decode from the supplied JSON object.
-    /// - Parameter decoder: The JSON object to decode.
+    /// - Parameter decoder: The JSON decoder that will convert the JSON object.
     func decode<T>(_: T.Type = T.self, decoder: JSONDecoder = JSONDecoder()) throws -> T where T: Decodable {
         try decoder.decode(T.self, from: JSONEncoder().encode(self))
     }
