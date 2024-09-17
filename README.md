@@ -7,8 +7,8 @@ JSON in Swift - the way it should be.
 # Requirements
 
 - iOS 12.0+ / macOS 10.13+ / tvOS 12.0+ / watchOS 4.0+ / visionOS 1.0+
-- Xcode 16+
-- Swift 6.0+
+- Xcode 15+
+- Swift 5.9+
 
 # Usage
 
@@ -90,7 +90,7 @@ let package = Package(
     name: "YOUR_PROJECT_NAME",
     targets: [],
     dependencies: [
-        .package(url: "https://github.com/guykogus/SwifterJSON.git", from: "1.2.0")
+        .package(url: "https://github.com/guykogus/SwifterJSON.git", from: "4.0.0")
     ]
 )
 </code></pre>
