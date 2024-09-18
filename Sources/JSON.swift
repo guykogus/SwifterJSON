@@ -101,19 +101,19 @@ public extension JSON {
 // MARK: - Helpers
 
 public extension JSON {
-    /// Hepler function to check if the value is null.
+    /// Helper function to check if the value is null.
     var isNull: Bool {
         guard case .null = self else { return false }
         return true
     }
 
-    /// Hepler function to get the boolean value, if possible.
+    /// Helper function to get the boolean value, if possible.
     var boolValue: Bool? {
         guard case let .bool(value) = self else { return nil }
         return value
     }
 
-    /// Hepler function to get the integer value, if possible.
+    /// Helper function to get the integer value, if possible.
     var intValue: Int? {
         switch self {
         case .null, .bool, .string, .array, .object:
@@ -125,7 +125,7 @@ public extension JSON {
         }
     }
 
-    /// Hepler function to get the floating point value, if possible.
+    /// Helper function to get the floating point value, if possible.
     var doubleValue: Double? {
         switch self {
         case .null, .bool, .string, .array, .object:
@@ -137,25 +137,25 @@ public extension JSON {
         }
     }
 
-    /// Hepler function to get the string value, if possible.
+    /// Helper function to get the string value, if possible.
     var stringValue: String? {
         guard case let .string(value) = self else { return nil }
         return value
     }
 
-    /// Hepler function to get the arraiy value, if possible.
+    /// Helper function to get the array value, if possible.
     var arrayValue: [JSON]? {
         guard case let .array(value) = self else { return nil }
         return value
     }
 
-    /// Hepler function to get the object value, if possible.
+    /// Helper function to get the object value, if possible.
     var objectValue: [String: JSON]? {
         guard case let .object(value) = self else { return nil }
         return value
     }
 
-    /// Hepler function to get the number of contained values, if possible.
+    /// Helper function to get the number of contained values, if possible.
     var count: Int? {
         switch self {
         case .null, .bool, .int, .double, .string:
@@ -394,6 +394,16 @@ public extension JSON {
         case let .object(value):
             [String: Any?](uniqueKeysWithValues: value.lazy.map { ($0, $1.rawValue) })
         }
+    }
+
+    /// Helper function to get the raw array value, if possible.
+    var arrayRawValue: [Any]? {
+        rawValue as? [Any]
+    }
+
+    /// Helper function to get the raw dictionary value, if possible.
+    var dictionaryRawValue: [String: Any]? {
+        rawValue as? [String: Any]
     }
 
     /// Attempt to initialize a `JSON` object from `Any` value.
