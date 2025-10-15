@@ -357,7 +357,7 @@ public extension JSON {
     /// - Parameter type: The type of the value to decode from the supplied JSON object.
     /// - Parameter decoder: The JSON decoder that will convert the JSON object.
     func decode<T>(_: T.Type = T.self, decoder: JSONDecoder = JSONDecoder()) throws -> T where T: Decodable {
-        try decoder.decode(T.self, from: JSONEncoder().encode(self))
+        try decoder.decode(T.self, from: self)
     }
 }
 #endif
