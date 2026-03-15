@@ -44,7 +44,7 @@ struct JSONDecoderTests {
             encoder.dateEncodingStrategy = .millisecondsSince1970
         case .iso8601:
             encoder.dateEncodingStrategy = .iso8601
-        #if !os(Linux) && !os(Android)
+        #if !os(Linux) && !os(Android) && !os(WASI)
         case let .formatted(f):
             encoder.dateEncodingStrategy = .formatted(f)
         #endif
@@ -346,7 +346,7 @@ struct JSONDecoderTests {
         try expectParity(B.self, json: ["b": 2_000_000.0]) { $0.dateDecodingStrategy = .millisecondsSince1970 }
         try expectParity(C.self, json: ["c": "1970-01-01T00:00:00Z"]) { $0.dateDecodingStrategy = .iso8601 }
 
-        #if !os(Linux) && !os(Android)
+        #if !os(Linux) && !os(Android) && !os(WASI)
         let df = DateFormatter()
         df.dateFormat = "yyyy/MM/dd HH:mm:ss ZZZ"
         try expectParity(E.self, json: ["x": "1970/01/01 00:00:00 +0000"]) {
