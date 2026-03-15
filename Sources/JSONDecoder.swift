@@ -10,7 +10,15 @@ import Foundation
 
 public extension JSONDecoder {
     func decode<T>(_: T.Type, from: JSON) throws -> T where T: Decodable {
-        try T(from: JSONDecoderImpl(codingPath: [], userInfo: [:], json: from))
+        try T(from: JSONDecoderImpl(
+            codingPath: [],
+            userInfo: userInfo,
+            json: from,
+            keyDecodingStrategy: keyDecodingStrategy,
+            dateDecodingStrategy: dateDecodingStrategy,
+            dataDecodingStrategy: dataDecodingStrategy,
+            nonConformingFloatDecodingStrategy: nonConformingFloatDecodingStrategy
+        ))
     }
 }
 
@@ -20,35 +28,104 @@ private struct JSONDecoderImpl: Decoder {
 
     private let json: JSON
 
-    init(codingPath: [any CodingKey], userInfo: [CodingUserInfoKey: Any], json: JSON) {
+    // Strategies
+    let keyDecodingStrategy: JSONDecoder.KeyDecodingStrategy
+    let dateDecodingStrategy: JSONDecoder.DateDecodingStrategy
+    let dataDecodingStrategy: JSONDecoder.DataDecodingStrategy
+    let nonConformingFloatDecodingStrategy: JSONDecoder.NonConformingFloatDecodingStrategy
+
+    init(
+        codingPath: [any CodingKey],
+        userInfo: [CodingUserInfoKey: Any],
+        json: JSON,
+        keyDecodingStrategy: JSONDecoder.KeyDecodingStrategy,
+        dateDecodingStrategy: JSONDecoder.DateDecodingStrategy,
+        dataDecodingStrategy: JSONDecoder.DataDecodingStrategy,
+        nonConformingFloatDecodingStrategy: JSONDecoder.NonConformingFloatDecodingStrategy
+    ) {
         self.codingPath = codingPath
         self.userInfo = userInfo
         self.json = json
+        self.keyDecodingStrategy = keyDecodingStrategy
+        self.dateDecodingStrategy = dateDecodingStrategy
+        self.dataDecodingStrategy = dataDecodingStrategy
+        self.nonConformingFloatDecodingStrategy = nonConformingFloatDecodingStrategy
     }
 
     func container<Key>(keyedBy _: Key.Type) throws -> KeyedDecodingContainer<Key> where Key: CodingKey {
-        try KeyedDecodingContainer(JSONKeyedDecodingContainer<Key>(codingPath: codingPath, json: json))
+        try KeyedDecodingContainer(JSONKeyedDecodingContainer<Key>(
+            codingPath: codingPath,
+            json: json,
+            userInfo: userInfo,
+            keyDecodingStrategy: keyDecodingStrategy,
+            dateDecodingStrategy: dateDecodingStrategy,
+            dataDecodingStrategy: dataDecodingStrategy,
+            nonConformingFloatDecodingStrategy: nonConformingFloatDecodingStrategy
+        ))
     }
 
     func unkeyedContainer() throws -> any UnkeyedDecodingContainer {
-        try JSONUnkeyedDecodingContainer(codingPath: codingPath, json: json)
+        try JSONUnkeyedDecodingContainer(
+            codingPath: codingPath,
+            json: json,
+            userInfo: userInfo,
+            keyDecodingStrategy: keyDecodingStrategy,
+            dateDecodingStrategy: dateDecodingStrategy,
+            dataDecodingStrategy: dataDecodingStrategy,
+            nonConformingFloatDecodingStrategy: nonConformingFloatDecodingStrategy
+        )
     }
 
     func singleValueContainer() throws -> any SingleValueDecodingContainer {
-        try JSONSingleValueDecodingContainer(codingPath: codingPath, json: json)
+        try JSONSingleValueDecodingContainer(
+            codingPath: codingPath,
+            json: json,
+            userInfo: userInfo,
+            keyDecodingStrategy: keyDecodingStrategy,
+            dateDecodingStrategy: dateDecodingStrategy,
+            dataDecodingStrategy: dataDecodingStrategy,
+            nonConformingFloatDecodingStrategy: nonConformingFloatDecodingStrategy
+        )
     }
 }
 
 private struct JSONKeyedDecodingContainer<Key>: KeyedDecodingContainerProtocol where Key: CodingKey {
     let codingPath: [any CodingKey]
     let json: JSON
+    let userInfo: [CodingUserInfoKey: Any]
+    let keyDecodingStrategy: JSONDecoder.KeyDecodingStrategy
+    let dateDecodingStrategy: JSONDecoder.DateDecodingStrategy
+    let dataDecodingStrategy: JSONDecoder.DataDecodingStrategy
+    let nonConformingFloatDecodingStrategy: JSONDecoder.NonConformingFloatDecodingStrategy
 
     var allKeys: [Key] {
         guard case let .object(object) = json else { return [] }
-        return object.keys.compactMap { Key(stringValue: $0) }
+        return object.keys.compactMap { jsonKey in
+            switch keyDecodingStrategy {
+            case .useDefaultKeys:
+                return Key(stringValue: jsonKey)
+            case .convertFromSnakeCase:
+                let camel = JSONKeyMapping.convertFromSnakeCase(jsonKey)
+                return Key(stringValue: camel)
+            case let .custom(mapper):
+                let temp = AnyTempKey(stringValue: jsonKey)
+                let mapped = mapper(codingPath + [temp])
+                return Key(stringValue: mapped.stringValue)
+            @unknown default:
+                return Key(stringValue: jsonKey)
+            }
+        }
     }
 
-    init(codingPath: [any CodingKey], json: JSON) throws {
+    init(
+        codingPath: [any CodingKey],
+        json: JSON,
+        userInfo: [CodingUserInfoKey: Any],
+        keyDecodingStrategy: JSONDecoder.KeyDecodingStrategy,
+        dateDecodingStrategy: JSONDecoder.DateDecodingStrategy,
+        dataDecodingStrategy: JSONDecoder.DataDecodingStrategy,
+        nonConformingFloatDecodingStrategy: JSONDecoder.NonConformingFloatDecodingStrategy
+    ) throws {
         guard case .object = json else {
             throw DecodingError.typeMismatch(
                 [String: JSON].self,
@@ -57,10 +134,15 @@ private struct JSONKeyedDecodingContainer<Key>: KeyedDecodingContainerProtocol w
         }
         self.codingPath = codingPath
         self.json = json
+        self.userInfo = userInfo
+        self.keyDecodingStrategy = keyDecodingStrategy
+        self.dateDecodingStrategy = dateDecodingStrategy
+        self.dataDecodingStrategy = dataDecodingStrategy
+        self.nonConformingFloatDecodingStrategy = nonConformingFloatDecodingStrategy
     }
 
     func contains(_ key: Key) -> Bool {
-        json.objectValue?[key.stringValue] != nil
+        json.objectValue?[actualJSONKey(for: key)] != nil
     }
 
     func decodeNil(forKey key: Key) throws -> Bool {
@@ -77,7 +159,15 @@ private struct JSONKeyedDecodingContainer<Key>: KeyedDecodingContainerProtocol w
             )
         }
 
-        return try KeyedDecodingContainer(JSONKeyedDecodingContainer<NestedKey>(codingPath: codingPath + [key], json: nestedJSON))
+        return try KeyedDecodingContainer(JSONKeyedDecodingContainer<NestedKey>(
+            codingPath: codingPath + [key],
+            json: nestedJSON,
+            userInfo: userInfo,
+            keyDecodingStrategy: keyDecodingStrategy,
+            dateDecodingStrategy: dateDecodingStrategy,
+            dataDecodingStrategy: dataDecodingStrategy,
+            nonConformingFloatDecodingStrategy: nonConformingFloatDecodingStrategy
+        ))
     }
 
     func nestedUnkeyedContainer(forKey key: Key) throws -> any UnkeyedDecodingContainer {
@@ -88,7 +178,15 @@ private struct JSONKeyedDecodingContainer<Key>: KeyedDecodingContainerProtocol w
                 DecodingError.Context(codingPath: codingPath + [key], debugDescription: "Unkeyed container value was not an array.")
             )
         }
-        return try JSONUnkeyedDecodingContainer(codingPath: codingPath + [key], json: nestedJSON)
+        return try JSONUnkeyedDecodingContainer(
+            codingPath: codingPath + [key],
+            json: nestedJSON,
+            userInfo: userInfo,
+            keyDecodingStrategy: keyDecodingStrategy,
+            dateDecodingStrategy: dateDecodingStrategy,
+            dataDecodingStrategy: dataDecodingStrategy,
+            nonConformingFloatDecodingStrategy: nonConformingFloatDecodingStrategy
+        )
     }
 
     func decode(_: Bool.Type, forKey key: Key) throws -> Bool {
@@ -106,14 +204,11 @@ private struct JSONKeyedDecodingContainer<Key>: KeyedDecodingContainerProtocol w
     }
 
     func decode(_: Double.Type, forKey key: Key) throws -> Double {
-        let value = try value(forKey: key)
-        if case let .double(d) = value { return d }
-        if case let .int(i) = value { return Double(i) }
-        throw DecodingError.typeMismatch(Double.self, DecodingError.Context(codingPath: codingPath + [key], debugDescription: "Expected to decode Double/Int, but found something else instead."))
+        try decodeFloatingForKey(key) as Double
     }
 
     func decode(_: Float.Type, forKey key: Key) throws -> Float {
-        try Float(decode(Double.self, forKey: key))
+        try decodeFloatingForKey(key) as Float
     }
 
     func decode(_: Int.Type, forKey key: Key) throws -> Int {
@@ -136,26 +231,109 @@ private struct JSONKeyedDecodingContainer<Key>: KeyedDecodingContainerProtocol w
 
     func decode<T>(_: T.Type, forKey key: Key) throws -> T where T: Decodable {
         let value = try value(forKey: key, allowNull: true)
-        let decoder = JSONDecoderImpl(codingPath: codingPath + [key], userInfo: [:], json: value)
+        let path = codingPath + [key]
+        if T.self == Date.self {
+            let date = try decodeDateFromJSON(
+                from: value,
+                at: path,
+                userInfo: userInfo,
+                keyDecodingStrategy: keyDecodingStrategy,
+                dateDecodingStrategy: dateDecodingStrategy,
+                dataDecodingStrategy: dataDecodingStrategy,
+                nonConformingFloatDecodingStrategy: nonConformingFloatDecodingStrategy
+            )
+            return date as! T
+        }
+        if T.self == Data.self {
+            let data = try decodeDataFromJSON(
+                from: value,
+                at: path,
+                userInfo: userInfo,
+                keyDecodingStrategy: keyDecodingStrategy,
+                dateDecodingStrategy: dateDecodingStrategy,
+                dataDecodingStrategy: dataDecodingStrategy,
+                nonConformingFloatDecodingStrategy: nonConformingFloatDecodingStrategy
+            )
+            return data as! T
+        }
+        let decoder = JSONDecoderImpl(
+            codingPath: path,
+            userInfo: userInfo,
+            json: value,
+            keyDecodingStrategy: keyDecodingStrategy,
+            dateDecodingStrategy: dateDecodingStrategy,
+            dataDecodingStrategy: dataDecodingStrategy,
+            nonConformingFloatDecodingStrategy: nonConformingFloatDecodingStrategy
+        )
         return try T(from: decoder)
     }
 
     func superDecoder() throws -> any Decoder {
-        JSONDecoderImpl(codingPath: codingPath, userInfo: [:], json: json)
+        JSONDecoderImpl(
+            codingPath: codingPath,
+            userInfo: userInfo,
+            json: json,
+            keyDecodingStrategy: keyDecodingStrategy,
+            dateDecodingStrategy: dateDecodingStrategy,
+            dataDecodingStrategy: dataDecodingStrategy,
+            nonConformingFloatDecodingStrategy: nonConformingFloatDecodingStrategy
+        )
     }
 
     func superDecoder(forKey key: Key) throws -> any Decoder {
-        try JSONDecoderImpl(codingPath: codingPath + [key], userInfo: [:], json: value(forKey: key, allowNull: true))
+        try JSONDecoderImpl(
+            codingPath: codingPath + [key],
+            userInfo: userInfo,
+            json: value(forKey: key, allowNull: true),
+            keyDecodingStrategy: keyDecodingStrategy,
+            dateDecodingStrategy: dateDecodingStrategy,
+            dataDecodingStrategy: dataDecodingStrategy,
+            nonConformingFloatDecodingStrategy: nonConformingFloatDecodingStrategy
+        )
+    }
+
+    // MARK: - Helpers
+
+    private func actualJSONKey(for key: Key) -> String {
+        switch keyDecodingStrategy {
+        case .useDefaultKeys:
+            return key.stringValue
+        case .convertFromSnakeCase:
+            return JSONKeyMapping.convertToSnakeCase(key.stringValue)
+        case let .custom(mapper):
+            guard case let .object(object) = json else {
+                return key.stringValue
+            }
+            for jsonKey in object.keys {
+                let temp = AnyTempKey(stringValue: jsonKey)
+                let mapped = mapper(codingPath + [temp])
+                if mapped.stringValue == key.stringValue {
+                    return jsonKey
+                }
+            }
+            return key.stringValue
+        @unknown default:
+            return key.stringValue
+        }
     }
 
     private func value(forKey key: Key, allowNull: Bool = false) throws -> JSON {
-        guard let value = json[key.stringValue] else {
+        let lookupKey = actualJSONKey(for: key)
+        guard let value = json[lookupKey] else {
             throw DecodingError.keyNotFound(key, DecodingError.Context(codingPath: codingPath + [key], debugDescription: "Missing key: \(key.stringValue)"))
         }
         if !allowNull, value.isNull {
             throw DecodingError.valueNotFound(JSON.self, DecodingError.Context(codingPath: codingPath + [key], debugDescription: "Null value for key: \(key.stringValue)"))
         }
         return value
+    }
+
+    private func decodeFloatingForKey<T: BinaryFloatingPoint>(_ key: Key) throws -> T {
+        try decodeFloatingFromJSON(
+            from: try value(forKey: key),
+            codingPath: codingPath + [key],
+            nonConformingFloatDecodingStrategy: nonConformingFloatDecodingStrategy
+        )
     }
 }
 
@@ -167,7 +345,22 @@ private struct JSONUnkeyedDecodingContainer: UnkeyedDecodingContainer {
 
     private let array: [JSON]
 
-    init(codingPath: [any CodingKey], json: JSON) throws {
+    // strategies and userInfo
+    let userInfo: [CodingUserInfoKey: Any]
+    let keyDecodingStrategy: JSONDecoder.KeyDecodingStrategy
+    let dateDecodingStrategy: JSONDecoder.DateDecodingStrategy
+    let dataDecodingStrategy: JSONDecoder.DataDecodingStrategy
+    let nonConformingFloatDecodingStrategy: JSONDecoder.NonConformingFloatDecodingStrategy
+
+    init(
+        codingPath: [any CodingKey],
+        json: JSON,
+        userInfo: [CodingUserInfoKey: Any],
+        keyDecodingStrategy: JSONDecoder.KeyDecodingStrategy,
+        dateDecodingStrategy: JSONDecoder.DateDecodingStrategy,
+        dataDecodingStrategy: JSONDecoder.DataDecodingStrategy,
+        nonConformingFloatDecodingStrategy: JSONDecoder.NonConformingFloatDecodingStrategy
+    ) throws {
         guard case let .array(array) = json else {
             throw DecodingError.typeMismatch(
                 JSON.self,
@@ -177,6 +370,11 @@ private struct JSONUnkeyedDecodingContainer: UnkeyedDecodingContainer {
         self.codingPath = codingPath
         self.array = array
         count = array.count
+        self.userInfo = userInfo
+        self.keyDecodingStrategy = keyDecodingStrategy
+        self.dateDecodingStrategy = dateDecodingStrategy
+        self.dataDecodingStrategy = dataDecodingStrategy
+        self.nonConformingFloatDecodingStrategy = nonConformingFloatDecodingStrategy
     }
 
     private mutating func pop() throws -> JSON {
@@ -188,8 +386,14 @@ private struct JSONUnkeyedDecodingContainer: UnkeyedDecodingContainer {
     }
 
     mutating func decodeNil() throws -> Bool {
-        let v = try pop()
-        return v.isNull
+        guard currentIndex < (count ?? 0) else {
+            throw DecodingError.dataCorrupted(DecodingError.Context(codingPath: codingPath, debugDescription: "Unkeyed container is at end."))
+        }
+        if array[currentIndex].isNull {
+            currentIndex += 1
+            return true
+        }
+        return false
     }
 
     mutating func decode(_: Bool.Type) throws -> Bool {
@@ -209,14 +413,11 @@ private struct JSONUnkeyedDecodingContainer: UnkeyedDecodingContainer {
     }
 
     mutating func decode(_: Double.Type) throws -> Double {
-        let v = try pop()
-        if case let .double(d) = v { return d }
-        if case let .int(i) = v { return Double(i) }
-        throw DecodingError.typeMismatch(Double.self, DecodingError.Context(codingPath: codingPath, debugDescription: "Expected Double/Int"))
+        try decodeFloating() as Double
     }
 
     mutating func decode(_: Float.Type) throws -> Float {
-        try Float(decode(Double.self))
+        try decodeFloating() as Float
     }
 
     mutating func decode(_: Int.Type) throws -> Int {
@@ -240,7 +441,40 @@ private struct JSONUnkeyedDecodingContainer: UnkeyedDecodingContainer {
     mutating func decode<T>(_: T.Type) throws -> T where T: Decodable {
         let value = try pop()
         let indexKey = JSONIndexCodingKey(intValue: currentIndex - 1)
-        let decoder = JSONDecoderImpl(codingPath: codingPath + [indexKey], userInfo: [:], json: value)
+        let path = codingPath + [indexKey]
+        if T.self == Date.self {
+            let date = try decodeDateFromJSON(
+                from: value,
+                at: path,
+                userInfo: userInfo,
+                keyDecodingStrategy: keyDecodingStrategy,
+                dateDecodingStrategy: dateDecodingStrategy,
+                dataDecodingStrategy: dataDecodingStrategy,
+                nonConformingFloatDecodingStrategy: nonConformingFloatDecodingStrategy
+            )
+            return date as! T
+        }
+        if T.self == Data.self {
+            let data = try decodeDataFromJSON(
+                from: value,
+                at: path,
+                userInfo: userInfo,
+                keyDecodingStrategy: keyDecodingStrategy,
+                dateDecodingStrategy: dateDecodingStrategy,
+                dataDecodingStrategy: dataDecodingStrategy,
+                nonConformingFloatDecodingStrategy: nonConformingFloatDecodingStrategy
+            )
+            return data as! T
+        }
+        let decoder = JSONDecoderImpl(
+            codingPath: path,
+            userInfo: userInfo,
+            json: value,
+            keyDecodingStrategy: keyDecodingStrategy,
+            dateDecodingStrategy: dateDecodingStrategy,
+            dataDecodingStrategy: dataDecodingStrategy,
+            nonConformingFloatDecodingStrategy: nonConformingFloatDecodingStrategy
+        )
         return try T(from: decoder)
     }
 
@@ -250,19 +484,55 @@ private struct JSONUnkeyedDecodingContainer: UnkeyedDecodingContainer {
         guard case .object = nestedJSON else {
             throw DecodingError.typeMismatch(JSON.self, DecodingError.Context(codingPath: codingPath + [idxKey], debugDescription: "Expected object for nested keyed container"))
         }
-        return try KeyedDecodingContainer(JSONKeyedDecodingContainer<NestedKey>(codingPath: codingPath + [idxKey], json: nestedJSON))
+        return try KeyedDecodingContainer(JSONKeyedDecodingContainer<NestedKey>(
+            codingPath: codingPath + [idxKey],
+            json: nestedJSON,
+            userInfo: userInfo,
+            keyDecodingStrategy: keyDecodingStrategy,
+            dateDecodingStrategy: dateDecodingStrategy,
+            dataDecodingStrategy: dataDecodingStrategy,
+            nonConformingFloatDecodingStrategy: nonConformingFloatDecodingStrategy
+        ))
     }
 
     mutating func nestedUnkeyedContainer() throws -> any UnkeyedDecodingContainer {
         let idxKey = JSONIndexCodingKey(intValue: currentIndex)
         let nestedJSON = try pop()
-        return try JSONUnkeyedDecodingContainer(codingPath: codingPath + [idxKey], json: nestedJSON)
+        return try JSONUnkeyedDecodingContainer(
+            codingPath: codingPath + [idxKey],
+            json: nestedJSON,
+            userInfo: userInfo,
+            keyDecodingStrategy: keyDecodingStrategy,
+            dateDecodingStrategy: dateDecodingStrategy,
+            dataDecodingStrategy: dataDecodingStrategy,
+            nonConformingFloatDecodingStrategy: nonConformingFloatDecodingStrategy
+        )
     }
 
     mutating func superDecoder() throws -> any Decoder {
         let idxKey = JSONIndexCodingKey(intValue: currentIndex)
         let value = try pop()
-        return JSONDecoderImpl(codingPath: codingPath + [idxKey], userInfo: [:], json: value)
+        return JSONDecoderImpl(
+            codingPath: codingPath + [idxKey],
+            userInfo: userInfo,
+            json: value,
+            keyDecodingStrategy: keyDecodingStrategy,
+            dateDecodingStrategy: dateDecodingStrategy,
+            dataDecodingStrategy: dataDecodingStrategy,
+            nonConformingFloatDecodingStrategy: nonConformingFloatDecodingStrategy
+        )
+    }
+
+    // MARK: - helpers
+
+    private mutating func decodeFloating<T: BinaryFloatingPoint>() throws -> T {
+        let value = try pop()
+        let indexKey = JSONIndexCodingKey(intValue: currentIndex - 1)
+        return try decodeFloatingFromJSON(
+            from: value,
+            codingPath: codingPath + [indexKey],
+            nonConformingFloatDecodingStrategy: nonConformingFloatDecodingStrategy
+        )
     }
 }
 
@@ -270,19 +540,28 @@ private struct JSONSingleValueDecodingContainer: SingleValueDecodingContainer {
     let codingPath: [any CodingKey]
     let json: JSON
 
-    init(codingPath: [any CodingKey], json: JSON) throws {
-        // Ensure we are not wrapping an array or object in a single-value container
-        switch json {
-        case .array, .object:
-            throw DecodingError.typeMismatch(
-                JSON.self,
-                DecodingError.Context(codingPath: codingPath, debugDescription: "Single value container cannot be created for arrays or objects.")
-            )
-        default:
-            break
-        }
+    let userInfo: [CodingUserInfoKey: Any]
+    let keyDecodingStrategy: JSONDecoder.KeyDecodingStrategy
+    let dateDecodingStrategy: JSONDecoder.DateDecodingStrategy
+    let dataDecodingStrategy: JSONDecoder.DataDecodingStrategy
+    let nonConformingFloatDecodingStrategy: JSONDecoder.NonConformingFloatDecodingStrategy
+
+    init(
+        codingPath: [any CodingKey],
+        json: JSON,
+        userInfo: [CodingUserInfoKey: Any],
+        keyDecodingStrategy: JSONDecoder.KeyDecodingStrategy,
+        dateDecodingStrategy: JSONDecoder.DateDecodingStrategy,
+        dataDecodingStrategy: JSONDecoder.DataDecodingStrategy,
+        nonConformingFloatDecodingStrategy: JSONDecoder.NonConformingFloatDecodingStrategy
+    ) throws {
         self.codingPath = codingPath
         self.json = json
+        self.userInfo = userInfo
+        self.keyDecodingStrategy = keyDecodingStrategy
+        self.dateDecodingStrategy = dateDecodingStrategy
+        self.dataDecodingStrategy = dataDecodingStrategy
+        self.nonConformingFloatDecodingStrategy = nonConformingFloatDecodingStrategy
     }
 
     func decodeNil() -> Bool {
@@ -304,13 +583,11 @@ private struct JSONSingleValueDecodingContainer: SingleValueDecodingContainer {
     }
 
     func decode(_: Double.Type) throws -> Double {
-        if case let .double(d) = json { return d }
-        if case let .int(i) = json { return Double(i) }
-        throw DecodingError.typeMismatch(Double.self, DecodingError.Context(codingPath: codingPath, debugDescription: "Expected Double/Int"))
+        try decodeFloating() as Double
     }
 
     func decode(_: Float.Type) throws -> Float {
-        try Float(decode(Double.self))
+        try decodeFloating() as Float
     }
 
     func decode(_: Int.Type) throws -> Int {
@@ -331,7 +608,49 @@ private struct JSONSingleValueDecodingContainer: SingleValueDecodingContainer {
     func decode(_: UInt64.Type) throws -> UInt64 { try UInt64(decode(Int.self)) }
 
     func decode<T>(_: T.Type) throws -> T where T: Decodable {
-        try T(from: JSONDecoderImpl(codingPath: codingPath, userInfo: [:], json: json))
+        if T.self == Date.self {
+            let date = try decodeDateFromJSON(
+                from: json,
+                at: codingPath,
+                userInfo: userInfo,
+                keyDecodingStrategy: keyDecodingStrategy,
+                dateDecodingStrategy: dateDecodingStrategy,
+                dataDecodingStrategy: dataDecodingStrategy,
+                nonConformingFloatDecodingStrategy: nonConformingFloatDecodingStrategy
+            )
+            return date as! T
+        }
+        if T.self == Data.self {
+            let data = try decodeDataFromJSON(
+                from: json,
+                at: codingPath,
+                userInfo: userInfo,
+                keyDecodingStrategy: keyDecodingStrategy,
+                dateDecodingStrategy: dateDecodingStrategy,
+                dataDecodingStrategy: dataDecodingStrategy,
+                nonConformingFloatDecodingStrategy: nonConformingFloatDecodingStrategy
+            )
+            return data as! T
+        }
+        return try T(from: JSONDecoderImpl(
+            codingPath: codingPath,
+            userInfo: userInfo,
+            json: json,
+            keyDecodingStrategy: keyDecodingStrategy,
+            dateDecodingStrategy: dateDecodingStrategy,
+            dataDecodingStrategy: dataDecodingStrategy,
+            nonConformingFloatDecodingStrategy: nonConformingFloatDecodingStrategy
+        ))
+    }
+
+    // MARK: - helpers
+
+    private func decodeFloating<T: BinaryFloatingPoint>() throws -> T {
+        try decodeFloatingFromJSON(
+            from: json,
+            codingPath: codingPath,
+            nonConformingFloatDecodingStrategy: nonConformingFloatDecodingStrategy
+        )
     }
 }
 
@@ -349,6 +668,176 @@ private struct JSONIndexCodingKey: CodingKey {
     init?(stringValue: String) {
         self.stringValue = stringValue
         intValue = Int(stringValue)
+    }
+}
+
+private struct AnyTempKey: CodingKey {
+    var stringValue: String
+    var intValue: Int?
+
+    init(stringValue: String) {
+        self.stringValue = stringValue
+        self.intValue = Int(stringValue)
+    }
+
+    init?(intValue: Int) {
+        self.intValue = intValue
+        self.stringValue = String(intValue)
+    }
+}
+
+private func decodeFloatingFromJSON<T: BinaryFloatingPoint>(
+    from json: JSON,
+    codingPath: [any CodingKey],
+    nonConformingFloatDecodingStrategy: JSONDecoder.NonConformingFloatDecodingStrategy
+) throws -> T {
+    if case let .double(value) = json { return T(value) }
+    if case let .int(value) = json { return T(value) }
+    if case let .string(value) = json {
+        switch nonConformingFloatDecodingStrategy {
+        case let .convertFromString(positiveInfinity, negativeInfinity, nan):
+            if value == positiveInfinity { return T.infinity }
+            if value == negativeInfinity { return -T.infinity }
+            if value == nan { return T.nan }
+        case .throw:
+            throw DecodingError.dataCorrupted(
+                DecodingError.Context(
+                    codingPath: codingPath,
+                    debugDescription: "String value '\(value)' does not match non-conforming float symbols."
+                )
+            )
+        @unknown default:
+            throw DecodingError.dataCorrupted(
+                DecodingError.Context(
+                    codingPath: codingPath,
+                    debugDescription: "Unsupported nonConformingFloatDecodingStrategy."
+                )
+            )
+        }
+    }
+    throw DecodingError.typeMismatch(
+        T.self,
+        DecodingError.Context(codingPath: codingPath, debugDescription: "Expected to decode \(T.self)")
+    )
+}
+
+private func decodeDateFromJSON(
+    from json: JSON,
+    at path: [any CodingKey],
+    userInfo: [CodingUserInfoKey: Any],
+    keyDecodingStrategy: JSONDecoder.KeyDecodingStrategy,
+    dateDecodingStrategy: JSONDecoder.DateDecodingStrategy,
+    dataDecodingStrategy: JSONDecoder.DataDecodingStrategy,
+    nonConformingFloatDecodingStrategy: JSONDecoder.NonConformingFloatDecodingStrategy
+) throws -> Date {
+    switch dateDecodingStrategy {
+    case .deferredToDate:
+        return try Date(from: JSONDecoderImpl(
+            codingPath: path,
+            userInfo: userInfo,
+            json: json,
+            keyDecodingStrategy: keyDecodingStrategy,
+            dateDecodingStrategy: dateDecodingStrategy,
+            dataDecodingStrategy: dataDecodingStrategy,
+            nonConformingFloatDecodingStrategy: nonConformingFloatDecodingStrategy
+        ))
+    case .secondsSince1970:
+        if let value = json.doubleValue { return Date(timeIntervalSince1970: value) }
+    case .millisecondsSince1970:
+        if let value = json.doubleValue { return Date(timeIntervalSince1970: value / 1000.0) }
+    case .iso8601:
+        if case let .string(value) = json {
+            let formatter = ISO8601DateFormatter()
+            if let date = formatter.date(from: value) { return date }
+        }
+    case let .formatted(formatter):
+        if case let .string(value) = json, let date = formatter.date(from: value) { return date }
+    case let .custom(block):
+        return try block(JSONDecoderImpl(
+            codingPath: path,
+            userInfo: userInfo,
+            json: json,
+            keyDecodingStrategy: keyDecodingStrategy,
+            dateDecodingStrategy: dateDecodingStrategy,
+            dataDecodingStrategy: dataDecodingStrategy,
+            nonConformingFloatDecodingStrategy: nonConformingFloatDecodingStrategy
+        ))
+    @unknown default:
+        break
+    }
+    throw DecodingError.dataCorrupted(DecodingError.Context(codingPath: path, debugDescription: "Invalid date value"))
+}
+
+private func decodeDataFromJSON(
+    from json: JSON,
+    at path: [any CodingKey],
+    userInfo: [CodingUserInfoKey: Any],
+    keyDecodingStrategy: JSONDecoder.KeyDecodingStrategy,
+    dateDecodingStrategy: JSONDecoder.DateDecodingStrategy,
+    dataDecodingStrategy: JSONDecoder.DataDecodingStrategy,
+    nonConformingFloatDecodingStrategy: JSONDecoder.NonConformingFloatDecodingStrategy
+) throws -> Data {
+    switch dataDecodingStrategy {
+    case .deferredToData:
+        return try Data(from: JSONDecoderImpl(
+            codingPath: path,
+            userInfo: userInfo,
+            json: json,
+            keyDecodingStrategy: keyDecodingStrategy,
+            dateDecodingStrategy: dateDecodingStrategy,
+            dataDecodingStrategy: dataDecodingStrategy,
+            nonConformingFloatDecodingStrategy: nonConformingFloatDecodingStrategy
+        ))
+    case .base64:
+        if case let .string(value) = json, let data = Data(base64Encoded: value) { return data }
+    case let .custom(block):
+        return try block(JSONDecoderImpl(
+            codingPath: path,
+            userInfo: userInfo,
+            json: json,
+            keyDecodingStrategy: keyDecodingStrategy,
+            dateDecodingStrategy: dateDecodingStrategy,
+            dataDecodingStrategy: dataDecodingStrategy,
+            nonConformingFloatDecodingStrategy: nonConformingFloatDecodingStrategy
+        ))
+    @unknown default:
+        break
+    }
+    throw DecodingError.dataCorrupted(DecodingError.Context(codingPath: path, debugDescription: "Invalid data value"))
+}
+
+private enum JSONKeyMapping {
+    static func convertFromSnakeCase(_ stringKey: String) -> String {
+        guard !stringKey.isEmpty else { return stringKey }
+        var result = ""
+        var capitalizeNext = false
+        for scalar in stringKey.unicodeScalars {
+            if scalar == "_" {
+                capitalizeNext = true
+                continue
+            }
+            if capitalizeNext {
+                result.append(String(scalar).uppercased())
+                capitalizeNext = false
+            } else {
+                result.append(String(scalar))
+            }
+        }
+        return result
+    }
+
+    static func convertToSnakeCase(_ stringKey: String) -> String {
+        guard !stringKey.isEmpty else { return stringKey }
+        var result = ""
+        for ch in stringKey {
+            if ch.isUppercase {
+                result.append("_")
+                result.append(ch.lowercased())
+            } else {
+                result.append(ch)
+            }
+        }
+        return result
     }
 }
 #endif

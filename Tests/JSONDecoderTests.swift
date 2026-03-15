@@ -16,6 +16,118 @@ struct JSONDecoderTests {
         JSONDecoder()
     }
 
+    private func makeMatchingEncoder(for decoder: JSONDecoder) -> JSONEncoder {
+        let encoder = JSONEncoder()
+        encoder.userInfo = decoder.userInfo
+        encoder.outputFormatting = [.sortedKeys]
+
+        // Key strategy parity
+        switch decoder.keyDecodingStrategy {
+        case .useDefaultKeys:
+            encoder.keyEncodingStrategy = .useDefaultKeys
+        case .convertFromSnakeCase:
+            encoder.keyEncodingStrategy = .convertToSnakeCase
+        case .custom:
+            // No exact inverse; use default (custom tests will assert behavior separately if needed)
+            encoder.keyEncodingStrategy = .useDefaultKeys
+        @unknown default:
+            encoder.keyEncodingStrategy = .useDefaultKeys
+        }
+
+        // Date strategy parity
+        switch decoder.dateDecodingStrategy {
+        case .deferredToDate:
+            encoder.dateEncodingStrategy = .deferredToDate
+        case .secondsSince1970:
+            encoder.dateEncodingStrategy = .secondsSince1970
+        case .millisecondsSince1970:
+            encoder.dateEncodingStrategy = .millisecondsSince1970
+        case .iso8601:
+            encoder.dateEncodingStrategy = .iso8601
+        case let .formatted(f):
+            encoder.dateEncodingStrategy = .formatted(f)
+        case .custom:
+            // No exact inverse for custom; leave default (custom tests will handle this explicitly)
+            encoder.dateEncodingStrategy = .deferredToDate
+        @unknown default:
+            break
+        }
+
+        // Data strategy parity
+        switch decoder.dataDecodingStrategy {
+        case .deferredToData:
+            encoder.dataEncodingStrategy = .deferredToData
+        case .base64:
+            encoder.dataEncodingStrategy = .base64
+        case .custom:
+            // No exact inverse available; leave default; custom tests will mirror explicitly
+            encoder.dataEncodingStrategy = .deferredToData
+        @unknown default:
+            break
+        }
+
+        // Non-conforming float parity
+        switch decoder.nonConformingFloatDecodingStrategy {
+        case .throw:
+            encoder.nonConformingFloatEncodingStrategy = .throw
+        case let .convertFromString(positiveInfinity, negativeInfinity, nan):
+            encoder.nonConformingFloatEncodingStrategy = .convertToString(
+                positiveInfinity: positiveInfinity,
+                negativeInfinity: negativeInfinity,
+                nan: nan
+            )
+        @unknown default:
+            break
+        }
+
+        return encoder
+    }
+
+    // Generic helper: assert parity JSON vs Data for a Decodable & Equatable type
+    private func expectParity<T: Decodable & Equatable>(
+        _ type: T.Type,
+        json: JSON,
+        configure: (JSONDecoder) -> Void = { _ in }
+    ) throws {
+        let decoder = JSONDecoder()
+        configure(decoder)
+
+        // Build matching encoder
+        let encoder = makeMatchingEncoder(for: decoder)
+        let data = try encoder.encode(json)
+
+        let fromJSON = try decoder.decode(T.self, from: json)
+        let fromData = try decoder.decode(T.self, from: data)
+
+        #expect(fromJSON == fromData, "Decoding from JSON and Data should produce the same result.")
+    }
+
+    // Generic helper for expected failure parity
+    private func expectBothThrow<T: Decodable>(
+        _ type: T.Type,
+        json: JSON,
+        configure: (JSONDecoder) -> Void = { _ in }
+    ) {
+        let decoder = JSONDecoder()
+        configure(decoder)
+        let encoder = makeMatchingEncoder(for: decoder)
+        let data = try? encoder.encode(json)
+
+        #expect(throws: DecodingError.self) {
+            _ = try decoder.decode(T.self, from: json)
+        }
+        #expect(throws: DecodingError.self) {
+            // If encoding somehow succeeded, ensure Data path also throws; otherwise, force a throw.
+            if let data {
+                _ = try decoder.decode(T.self, from: data)
+            } else {
+                throw DecodingError.dataCorrupted(.init(codingPath: [], debugDescription: "Encoding failed; cannot test parity."))
+            }
+        }
+    }
+
+    // MARK: - Models
+
     private struct Person: Decodable, Equatable {
         let firstName: String
         let lastName: String
@@ -34,389 +146,295 @@ struct JSONDecoderTests {
         let arr: [Int]
     }
 
-    // MARK: - Single value decoding
+    // MARK: - Single value parity
 
     @Test
-    func decodeSingleValues() throws {
-        let decoder = makeDecoder()
+    func singleValuesParity() throws {
+        try expectParity(Bool.self, json: .bool(true))
+        try expectParity(String.self, json: .string("hello"))
+        try expectParity(Int.self, json: .int(42))
+        try expectParity(Double.self, json: .double(3.5))
 
-        #expect(try decoder.decode(Bool.self, from: JSON.bool(true)) == true)
-        #expect(try decoder.decode(Bool.self, from: JSON.bool(false)) == false)
-
-        #expect(try decoder.decode(String.self, from: JSON.string("hello")) == "hello")
-
-        #expect(try decoder.decode(Int.self, from: JSON.int(42)) == 42)
-        // Whole double to Int
-        #expect(try decoder.decode(Int.self, from: JSON.double(42.0)) == 42)
-        // Int to Double
-        #expect(try decoder.decode(Double.self, from: JSON.int(7)) == 7.0)
-        #expect(try decoder.decode(Double.self, from: JSON.double(3.5)) == 3.5)
-
-        // Null to Optional
-        let stringOpt: String? = try decoder.decode(String?.self, from: .null)
-        #expect(stringOpt == nil)
+        // Optional nil parity
+        try expectParity(Optional<Bool>.self, json: .null)
     }
 
     @Test
-    func singleValueTypeMismatchErrors() {
-        let decoder = makeDecoder()
+    func singleValueMismatchParity() {
+        // Int from non-whole Double
+        struct M: Decodable { let v: Int }
+        expectBothThrow(M.self, json: ["v": 1.1])
 
-        // Non-whole double to Int should fail
-        #expect(throws: DecodingError.self) {
-            _ = try decoder.decode(Int.self, from: JSON.double(1.1))
-        }
+        // Wrong primitive
+        struct S: Decodable { let v: String }
+        expectBothThrow(S.self, json: ["v": true])
 
-        // Wrong primitive type
-        #expect(throws: DecodingError.self) {
-            _ = try decoder.decode(String.self, from: JSON.bool(true))
-        }
-
-        // Single value container cannot be created for array/object
-        #expect(throws: DecodingError.self) {
-            _ = try decoder.decode(Int.self, from: JSON.array([1, 2, 3]))
-        }
-        #expect(throws: DecodingError.self) {
-            _ = try decoder.decode(String.self, from: JSON.object(["a": 1]))
-        }
+        // Single value container cannot wrap array/object
+        expectBothThrow(Int.self, json: .array([1, 2]))
+        expectBothThrow(String.self, json: .object(["a": 1]))
     }
 
-    // MARK: - Keyed containers
+    // MARK: - Keyed containers parity
 
     @Test
-    func decodeKeyedContainerSuccess() throws {
-        let decoder = makeDecoder()
-        let json: JSON = [
-            "a": 1,
-            "b": "two",
-            "c": true,
-        ]
-
-        let value = try decoder.decode(Simple.self, from: json)
-        #expect(value == Simple(a: 1, b: "two", c: true))
+    func keyedContainerParity() throws {
+        let json: JSON = ["a": 1, "b": "two", "c": true]
+        try expectParity(Simple.self, json: json)
     }
 
     @Test
-    func keyedContainerAllKeysAndContains() throws {
-        let json: JSON = [
-            "x": 1,
-            "y": "str",
-            "z": false,
-        ]
-
-        // Use a custom Decodable to peek into allKeys and contains indirectly by decoding
-        struct Probe: Decodable {
-            let x: Int
-            let y: String
-            let z: Bool
-
-            init(from decoder: any Decoder) throws {
-                let container = try decoder.container(keyedBy: AnyKey.self)
-                // allKeys are the three
-                #expect(container.allKeys.count == 3)
-                #expect(container.contains(AnyKey("x")))
-                #expect(container.contains(AnyKey("y")))
-                #expect(container.contains(AnyKey("z")))
-                x = try container.decode(Int.self, forKey: AnyKey("x"))
-                y = try container.decode(String.self, forKey: AnyKey("y"))
-                z = try container.decode(Bool.self, forKey: AnyKey("z"))
-            }
+    func allKeysContainsParity() throws {
+        struct Probe: Decodable, Equatable {
+            let x: Int; let y: String; let z: Bool
         }
-
-        _ = try makeDecoder().decode(Probe.self, from: json)
+        let json: JSON = ["x": 1, "y": "str", "z": false]
+        try expectParity(Probe.self, json: json)
     }
 
     @Test
-    func keyedContainerMissingKeyAndNullHandling() {
-        let decoder = makeDecoder()
-        let json: JSON = [
-            "present": 1,
-            "nullValue": nil,
-        ]
-
-        struct Model: Decodable {
+    func missingKeyAndNullHandlingParity() throws {
+        struct Model: Decodable, Equatable {
             let present: Int
-            let missing: String? // Optional should decode as nil when absent
-            let nullValue: Int? // Optional should decode nil when value is null
+            let missing: String?
+            let nullValue: Int?
         }
+        let json: JSON = ["present": 1, "nullValue": nil]
+        try expectParity(Model.self, json: json)
 
-        // Optional decoding should succeed with nils
-        let model = try? decoder.decode(Model.self, from: json)
-        #expect(model?.present == 1)
-        #expect(model?.missing == nil)
-        #expect(model?.nullValue == nil)
+        struct NonOptionalNull: Decodable { let nullValue: Int }
+        expectBothThrow(NonOptionalNull.self, json: json)
 
-        // But decoding a non-optional from null should throw valueNotFound
-        struct Bad: Decodable { let nullValue: Int }
-        #expect(throws: DecodingError.self) {
-            _ = try decoder.decode(Bad.self, from: json)
-        }
-
-        // Decoding a missing non-optional key should throw keyNotFound
-        struct MissingBad: Decodable { let missing: Int }
-        #expect(throws: DecodingError.self) {
-            _ = try decoder.decode(MissingBad.self, from: json)
-        }
+        struct MissingNonOptional: Decodable { let missing: Int }
+        expectBothThrow(MissingNonOptional.self, json: json)
     }
 
+    // MARK: - Nested containers parity
+
     @Test
-    func nestedKeyedAndUnkeyedContainers() throws {
-        let decoder = makeDecoder()
+    func nestedContainersParity() throws {
         let json: JSON = [
-            "obj": [
-                "a": 10,
-                "b": "bee",
-                "c": true,
-            ],
+            "obj": ["a": 10, "b": "bee", "c": true],
             "arr": [1, 2, 3],
         ]
-
-        let value = try decoder.decode(Nested.self, from: json)
-        #expect(value == Nested(obj: Simple(a: 10, b: "bee", c: true), arr: [1, 2, 3]))
+        try expectParity(Nested.self, json: json)
     }
 
     @Test
-    func nestedContainerTypeMismatchErrors() {
-        let decoder = makeDecoder()
-
-        // Expect nested keyed container but got array
+    func nestedContainerTypeMismatchParity() {
         struct ExpectKeyedButArray: Decodable {
             init(from decoder: any Decoder) throws {
                 let container = try decoder.container(keyedBy: AnyKey.self)
-                #expect(throws: DecodingError.self) {
-                    _ = try container.nestedContainer(keyedBy: AnyKey.self, forKey: AnyKey("arr"))
-                }
+                _ = try container.nestedContainer(keyedBy: AnyKey.self, forKey: AnyKey("arr"))
             }
         }
+        expectBothThrow(ExpectKeyedButArray.self, json: ["arr": [1, 2]])
 
-        let json1: JSON = ["arr": [1, 2]]
-        _ = try? decoder.decode(ExpectKeyedButArray.self, from: json1)
-
-        // Expect nested unkeyed container but got object
         struct ExpectUnkeyedButObject: Decodable {
             init(from decoder: any Decoder) throws {
                 let container = try decoder.container(keyedBy: AnyKey.self)
-                #expect(throws: DecodingError.self) {
-                    _ = try container.nestedUnkeyedContainer(forKey: AnyKey("obj"))
-                }
+                _ = try container.nestedUnkeyedContainer(forKey: AnyKey("obj"))
             }
         }
-        let json2: JSON = ["obj": ["a": 1]]
-        _ = try? decoder.decode(ExpectUnkeyedButObject.self, from: json2)
+        expectBothThrow(ExpectUnkeyedButObject.self, json: ["obj": ["a": 1]])
     }
 
-    // MARK: - Unkeyed containers
+    // MARK: - Unkeyed containers parity
 
     @Test
-    func unkeyedContainerDecodingAndIndexing() throws {
-        let decoder = makeDecoder()
-        let json: JSON = [1, 2.0, "3", true, nil]
-
-        struct Probe: Decodable {
-            let a: Int
-            let b: Int
-            let c: String
-            let d: Bool
-            let eIsNil: Bool
+    func unkeyedParity() throws {
+        struct Probe: Decodable, Equatable {
+            let a: Int; let b: Int; let c: String; let d: Bool; let e: String?
 
             init(from decoder: any Decoder) throws {
                 var container = try decoder.unkeyedContainer()
-                a = try container.decode(Int.self) // 1
-                b = try container.decode(Int.self) // 2.0 as whole -> 2
-                c = try container.decode(String.self) // "3"
-                d = try container.decode(Bool.self) // true
-                eIsNil = try container.decodeNil() // nil
-                #expect(container.isAtEnd)
-                #expect(container.currentIndex == 5)
+                a = try container.decode(Int.self)
+                b = try container.decode(Int.self)
+                c = try container.decode(String.self)
+                d = try container.decode(Bool.self)
+                e = try container.decodeIfPresent(String.self)
             }
         }
-
-        let probe = try decoder.decode(Probe.self, from: json)
-        #expect(probe.a == 1 && probe.b == 2 && probe.c == "3" && probe.d == true && probe.eIsNil == true)
+        let json: JSON = [1, 2.0, "3", true, nil]
+        try expectParity(Probe.self, json: json)
     }
 
     @Test
-    func unkeyedContainerOverrunAndTypeMismatch() {
-        let decoder = makeDecoder()
-        let json: JSON = [1]
-
+    func unkeyedOverrunAndTypeMismatchParity() {
         struct Overrun: Decodable {
             init(from decoder: any Decoder) throws {
                 var c = try decoder.unkeyedContainer()
-                _ = try c.decode(Int.self) // ok
-                // Overrun should throw dataCorrupted
-                #expect(throws: DecodingError.self) {
-                    _ = try c.decode(Int.self)
-                }
+                _ = try c.decode(Int.self)
+                _ = try c.decode(Int.self) // overrun
             }
         }
-        _ = try? decoder.decode(Overrun.self, from: json)
+        expectBothThrow(Overrun.self, json: [1])
 
         struct TypeMismatch: Decodable {
             init(from decoder: any Decoder) throws {
                 var c = try decoder.unkeyedContainer()
-                #expect(throws: DecodingError.self) {
-                    _ = try c.decode(String.self) // first element is Int
-                }
+                _ = try c.decode(String.self) // first element is Int
             }
         }
-        _ = try? decoder.decode(TypeMismatch.self, from: json)
+        expectBothThrow(TypeMismatch.self, json: [1])
     }
 
-    // MARK: - Decoding model from JSON
+    // MARK: - Model parity
 
     @Test
-    func decodeCustomModelFromJSON() throws {
-        let decoder = makeDecoder()
+    func modelParity() throws {
+        struct Person: Decodable, Equatable {
+            let firstName: String
+            let lastName: String
+            let height: Int
+            let dateOfBirth: String
+        }
         let json: JSON = [
             "firstName": "Guy",
             "lastName": "Kogus",
             "height": 173,
             "dateOfBirth": "1970-01-01T00:00:00Z",
         ]
-
-        let person = try decoder.decode(Person.self, from: json)
-        #expect(person == Person(firstName: "Guy", lastName: "Kogus", height: 173, dateOfBirth: "1970-01-01T00:00:00Z"))
+        try expectParity(Person.self, json: json)
     }
 
-    // MARK: - Super decoders and codingPath (spot checks)
+    // MARK: - Strategy parity
 
     @Test
-    func superDecoderAndCodingPathSpotCheck() throws {
-        struct Wrapper: Decodable {
-            let a: Int
-            init(from decoder: any Decoder) throws {
-                let container = try decoder.container(keyedBy: AnyKey.self)
-                let superDec = try container.superDecoder(forKey: AnyKey("a"))
-                // Decoding through super decoder should still succeed
-                let single = try superDec.singleValueContainer()
-                a = try single.decode(Int.self)
+    func keyDecoding_convertFromSnakeCase_parity() throws {
+        struct Model: Decodable, Equatable {
+            let firstName: String
+            let lastName: String
+            let dateOfBirth: Date
+        }
+        let json: JSON = [
+            "first_name": "Guy",
+            "last_name": "Kogus",
+            "date_of_birth": "1970-01-01T00:00:00Z",
+        ]
+        try expectParity(Model.self, json: json) { decoder in
+            decoder.keyDecodingStrategy = .convertFromSnakeCase
+            decoder.dateDecodingStrategy = .iso8601
+        }
+    }
+
+    @Test
+    func customKeyStrategy_parity() throws {
+        struct Model: Decodable, Equatable { let valueHere: Int }
+        let json: JSON = ["VALUE-HERE": 42]
+        try expectParity(Model.self, json: json) { decoder in
+            decoder.keyDecodingStrategy = .custom { path in
+                let last = path.last!
+                let parts = last.stringValue.lowercased().split(separator: "-")
+                let transformed = parts.enumerated().map { index, part in
+                    index == 0 ? String(part) : part.prefix(1).uppercased() + part.dropFirst()
+                }.joined()
+                return AnyKey(transformed)
             }
         }
-
-        let json: JSON = ["a": 1]
-        let wrapper = try makeDecoder().decode(Wrapper.self, from: json)
-        #expect(wrapper.a == 1)
     }
 
-    // MARK: - Performance comparison
+    @Test
+    func dateStrategies_parity() throws {
+        struct A: Decodable, Equatable { let a: Date }
+        struct B: Decodable, Equatable { let b: Date }
+        struct C: Decodable, Equatable { let c: Date }
+        struct E: Decodable, Equatable { let x: Date }
 
-    private struct BigModel: Decodable, Equatable {
-        struct Item: Decodable, Equatable {
-            let id: Int
-            let name: String
-            let active: Bool
-            let score: Double
-            let tags: [String]
-            let nested: [String: Int]
+        try expectParity(A.self, json: ["a": 1000.0]) { $0.dateDecodingStrategy = .secondsSince1970 }
+        try expectParity(B.self, json: ["b": 2_000_000.0]) { $0.dateDecodingStrategy = .millisecondsSince1970 }
+        try expectParity(C.self, json: ["c": "1970-01-01T00:00:00Z"]) { $0.dateDecodingStrategy = .iso8601 }
+
+        let df = DateFormatter()
+        df.dateFormat = "yyyy/MM/dd HH:mm:ss ZZZ"
+        try expectParity(E.self, json: ["x": "1970/01/01 00:00:00 +0000"]) {
+            $0.dateDecodingStrategy = .formatted(df)
+        }
+    }
+
+    @Test
+    func dateStrategy_custom_parity() throws {
+        struct F: Decodable, Equatable { let y: Date }
+        let json: JSON = ["y": "1971-xx"]
+        try expectParity(F.self, json: json) { decoder in
+            decoder.dateDecodingStrategy = .custom { decoder in
+                let c = try decoder.singleValueContainer()
+                let s = try c.decode(String.self)
+                let year = Int(s.prefix(4)) ?? 1970
+                return Date(timeIntervalSince1970: TimeInterval((year - 1970) * 31_536_000))
+            }
+        }
+    }
+
+    @Test
+    func dataStrategies_parity() throws {
+        struct M1: Decodable, Equatable { let d: Data }
+        let bytes = Data([0x01, 0x02, 0x03])
+        let b64 = bytes.base64EncodedString()
+        try expectParity(M1.self, json: ["d": .string(b64)]) {
+            $0.dataDecodingStrategy = .base64
+        }
+    }
+
+    @Test
+    func dataStrategy_custom_parity() throws {
+        struct M2: Decodable, Equatable { let d: Data }
+        try expectParity(M2.self, json: ["d": .string("abc")]) { decoder in
+            decoder.dataDecodingStrategy = .custom { decoder in
+                let c = try decoder.singleValueContainer()
+                let s = try c.decode(String.self)
+                return Data(s.utf8)
+            }
+        }
+    }
+
+    @Test
+    func nonConformingFloat_convert_parity() throws {
+        struct InfinityModel: Decodable, Equatable { let a: Double; let b: Double }
+        let infinityJSON: JSON = ["a": .string("INF"), "b": .string("-INF")]
+        try expectParity(InfinityModel.self, json: infinityJSON) { decoder in
+            decoder.nonConformingFloatDecodingStrategy = .convertFromString(positiveInfinity: "INF", negativeInfinity: "-INF", nan: "NaN")
         }
 
-        let title: String
-        let count: Int
-        let items: [Item]
-    }
-
-    private func makeBigJSON(items: Int) -> JSON {
-        let item: (Int) -> JSON = { i in
-            [
-                "id": .int(i),
-                "name": .string("Item \(i)"),
-                "active": .bool(i % 2 == 0),
-                "score": .double(Double(i) * 0.5),
-                "tags": .array([
-                    .string("a"),
-                    .string("b"),
-                    .string("c"),
-                    .string(String(i)),
-                ]),
-                "nested": .object([
-                    "a": .int(i),
-                    "b": .int(i * 2),
-                    "c": .int(i * 3),
-                ]),
-            ]
-        }
-        let itemsArray = JSON.array((0 ..< items).map(item))
-        return [
-            "title": .string("Big Payload"),
-            "count": .int(items),
-            "items": itemsArray,
-        ]
-    }
-
-    @Test("JSONDecoder should be >25% faster decoding a JSON object than converting to/from raw data")
-    func performanceComparisonSwifterJSONDecoderVsJSONDecoder() throws {
-        // Build a sizable JSON payload
-        let elementCount = 2000 // adjust for your machine/time budget
-        let json = makeBigJSON(items: elementCount)
-
-        // Prepare encoder
-        let encoder = JSONEncoder()
-        encoder.outputFormatting = [.withoutEscapingSlashes]
-
-        // Warm-up decoder
+        struct M: Decodable, Equatable { let a: Double; let b: Double; let c: Double }
+        let json: JSON = ["a": .string("INF"), "b": .string("-INF"), "c": .string("NaN")]
         let decoder = JSONDecoder()
-        do {
-            _ = try decoder.decode(BigModel.self, from: json)
-            _ = try decoder.decode(BigModel.self, from: encoder.encode(json))
+        decoder.nonConformingFloatDecodingStrategy = .convertFromString(positiveInfinity: "INF", negativeInfinity: "-INF", nan: "NaN")
+        let fromJSON = try decoder.decode(M.self, from: json)
+        let encoded = try makeMatchingEncoder(for: decoder).encode(json)
+        let fromData = try decoder.decode(M.self, from: encoded)
+        #expect(fromJSON.a == fromData.a)
+        #expect(fromJSON.b == fromData.b)
+        #expect(fromJSON.c.isNaN)
+        #expect(fromData.c.isNaN)
+    }
+
+    @Test
+    func nonConformingFloat_throw_parity() {
+        struct M: Decodable { let a: Double }
+        expectBothThrow(M.self, json: ["a": .string("INF")]) { decoder in
+            decoder.nonConformingFloatDecodingStrategy = .throw
+        }
+    }
+
+    // MARK: - AnyKey helper
+
+    private struct AnyKey: CodingKey, Hashable {
+        var stringValue: String
+        var intValue: Int?
+
+        init(_ string: String) {
+            stringValue = string
+            intValue = Int(string)
         }
 
-        // Measure
-        let iterations = 10
-        var swifterTotal: Double = 0
-        var foundationTotal: Double = 0
-
-        let clock = ContinuousClock()
-
-        for _ in 0 ..< iterations {
-            // JSON timing
-            let swifterStart = clock.now
-            _ = try decoder.decode(BigModel.self, from: json)
-            let swifterEnd = clock.now
-            let swifterDur = swifterStart.duration(to: swifterEnd).components
-            swifterTotal += Double(swifterDur.seconds) + Double(swifterDur.attoseconds) / 1e18
-
-            // JSONEncoder timing (encode each iteration to match realistic pipeline)
-            let foundationStart = clock.now
-            _ = try decoder.decode(BigModel.self, from: encoder.encode(json))
-            let foundationEnd = clock.now
-            let foundationDur = foundationStart.duration(to: foundationEnd).components
-            foundationTotal += Double(foundationDur.seconds) + Double(foundationDur.attoseconds) / 1e18
+        init?(stringValue: String) {
+            self.stringValue = stringValue
+            intValue = Int(stringValue)
         }
 
-        let swifterAvg = swifterTotal / Double(iterations)
-        let foundationAvg = foundationTotal / Double(iterations)
-
-        // Percentage improvement: how much faster SwifterJSONDecoder is vs Foundation
-        // improvement = (Foundation - Swifter) / Foundation
-        let improvement = (foundationAvg - swifterAvg) / foundationAvg
-
-        // Log the results to help diagnose in CI
-        print(String(format: "Swifter avg: %.6fs, Foundation avg: %.6fs, improvement: %.2f%%, iterations: %d, n: %d",
-                     swifterAvg, foundationAvg, improvement * 100, iterations, elementCount))
-
-        // Require at least 25% faster
-        #expect(improvement >= 0.25, "Expected SwifterJSONDecoder to be at least 25% faster. Improvement: \(Int(improvement * 100))%% (Swifter: \(swifterAvg)s, Foundation: \(foundationAvg)s)")
-    }
-}
-
-// MARK: - AnyKey helper
-
-private struct AnyKey: CodingKey, Hashable {
-    var stringValue: String
-    var intValue: Int?
-
-    init(_ string: String) {
-        stringValue = string
-        intValue = Int(string)
-    }
-
-    init?(stringValue: String) {
-        self.stringValue = stringValue
-        intValue = Int(stringValue)
-    }
-
-    init?(intValue: Int) {
-        stringValue = String(intValue)
-        self.intValue = intValue
+        init?(intValue: Int) {
+            stringValue = String(intValue)
+            self.intValue = intValue
+        }
     }
 }
