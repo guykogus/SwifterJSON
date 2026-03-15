@@ -811,16 +811,16 @@ private enum JSONKeyMapping {
         guard !stringKey.isEmpty else { return stringKey }
         var result = ""
         var capitalizeNext = false
-        for scalar in stringKey.unicodeScalars {
-            if scalar == "_" {
+        for ch in stringKey {
+            if ch == "_" {
                 capitalizeNext = true
                 continue
             }
             if capitalizeNext {
-                result.append(String(scalar).uppercased())
+                result.append(ch.uppercased())
                 capitalizeNext = false
             } else {
-                result.append(String(scalar))
+                result.append(ch)
             }
         }
         return result
