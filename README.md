@@ -1,22 +1,72 @@
 # SwifterJSON
 
-[![SPM compatible](https://img.shields.io/badge/SPM-Compatible-brightgreen.svg?style=flat)](https://swift.org/package-manager/)
+[![CI](https://github.com/guykogus/SwifterJSON/actions/workflows/platform-tests.yml/badge.svg)](https://github.com/guykogus/SwifterJSON/actions/workflows/platform-tests.yml)
+[![](https://img.shields.io/endpoint?url=https%3A%2F%2Fswiftpackageindex.com%2Fapi%2Fpackages%2Fguykogus%2FSwifterJSON%2Fbadge%3Ftype%3Dswift-versions)](https://swiftpackageindex.com/guykogus/SwifterJSON)
+[![](https://img.shields.io/endpoint?url=https%3A%2F%2Fswiftpackageindex.com%2Fapi%2Fpackages%2Fguykogus%2FSwifterJSON%2Fbadge%3Ftype%3Dplatforms)](https://swiftpackageindex.com/guykogus/SwifterJSON)
+[![SPM Compatible](https://img.shields.io/badge/SPM-Compatible-brightgreen.svg?style=flat)](https://swift.org/package-manager/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-JSON in Swift - the way it should be.
+**JSON in Swift — the way it should be.**
 
-# Requirements
+SwifterJSON is a lightweight, type-safe Swift `enum` for working with JSON data that doesn't map to a fixed `Codable` model. It leverages Swift's `Codable` infrastructure, so you can decode arbitrary JSON into a strongly-typed `JSON` value and traverse or mutate it with clean subscript syntax — no casting required.
 
-- iOS 12.0+ / macOS 10.13+ / tvOS 12.0+ / watchOS 4.0+ / visionOS 1.0+
-- Xcode 15+
-- Swift 5.9+
+## Features
 
-# Usage
+- **Type-safe enum** — every JSON value is represented as a `JSON` case (`null`, `bool`, `int`, `double`, `string`, `array`, `object`)
+- **Codable** — decode from `Data`/`String` via standard `JSONDecoder`; encode back via `JSONEncoder`
+- **Subscript access** — chain `[key]` and `[index]` subscripts to drill into nested structures
+- **Mutable** — modify deeply nested values in-place with subscript assignment
+- **Literal expressible** — create `JSON` values directly from Swift literals (strings, numbers, arrays, dictionaries, `nil`)
+- **Codable interop** — convert between `JSON` and any `Codable` type without round-tripping through `Data`
+- **Raw value bridging** — convert to/from `Any` for interop with APIs that use untyped dictionaries
+- **Sendable & Hashable** — safe for concurrent use and usable as dictionary keys
+- **Cross-platform** — iOS, macOS, tvOS, watchOS, visionOS, Linux, and Android
 
-In the modern era of `Codable` it is rare that we need to handle JSON data manually. Nevertheless there are times when we can't know the structure in advance, but we can still utilise `Codable` to make our lives easier.
+## Requirements
 
-For example, when loading JSON data:
+| Dependency | Minimum |
+|---|---|
+| Swift | 6.0+ |
+| iOS | 15.0+ |
+| macOS | 11.0+ |
+| tvOS | 15.0+ |
+| watchOS | 8.0+ |
+| visionOS | 1.0+ |
+| Linux | Swift 6.0 toolchain |
+| Android | Swift 6.0 toolchain |
 
-```JSON
+## Installation
+
+### Swift Package Manager
+
+Add SwifterJSON as a dependency in your `Package.swift`:
+
+```swift
+dependencies: [
+    .package(url: "https://github.com/guykogus/SwifterJSON.git", from: "4.0.0")
+]
+```
+
+Then add it to your target:
+
+```swift
+.target(
+    name: "YourTarget",
+    dependencies: ["SwifterJSON"]
+)
+```
+
+Or in Xcode: **File > Add Package Dependencies…** and enter `https://github.com/guykogus/SwifterJSON.git`.
+
+## Usage
+
+### The problem
+
+In the modern era of `Codable` it is rare that we need to handle JSON data manually. But sometimes the structure isn't known in advance — server-driven UI, feature flags, analytics payloads, etc.
+
+Given this JSON:
+
+```json
 {
   "Apple": {
     "address": {
@@ -30,81 +80,118 @@ For example, when loading JSON data:
 }
 ```
 
-### Previously
+With `JSONSerialization` you'd have to cast at every level:
 
-You would have had to perform a lot of casting to get the inner values.
-
-```Swift
-guard let companies = try JSONSerialization.jsonObject(with: companiesData) as? [String: Any] else { return }
+```swift
+guard let companies = try JSONSerialization.jsonObject(with: data) as? [String: Any] else { return }
 
 if let company = companies["Apple"] as? [String: Any],
-    let address = company["address"] as? [String: Any],
-    let city = address["city"] as? String {
+   let address = company["address"] as? [String: Any],
+   let city = address["city"] as? String {
     print("Apple is in \(city)")
 }
 ```
 
-Changing the inner values would also involve several castings.
+Mutations are even worse — you need mutable copies at each nesting level:
 
-```Swift
-guard var companies = try JSONSerialization.jsonObject(with: companiesData) as? [String: Any] else { return }
+```swift
+guard var companies = try JSONSerialization.jsonObject(with: data) as? [String: Any] else { return }
 
 if var apple = companies["Apple"] as? [String: Any],
-    var address = apple["address"] as? [String: Any] {
+   var address = apple["address"] as? [String: Any] {
     address["state"] = "California"
     apple["address"] = address
     companies["Apple"] = apple
 }
 ```
 
-### Using `SwifterJSON`
+### With SwifterJSON
 
-Since JSON has a fixed set of types there's no need to perform all these casts in long form. `SwifterJSON` uses an `enum` to store each type. With the aid of some helper functions, accessing the JSON values is now significantly shorter and easier.
+Reading nested values is a single chained expression:
 
-```Swift
-let companies = try JSONDecoder().decode(JSON.self, from: companiesData)
+```swift
+let companies = try JSONDecoder().decode(JSON.self, from: data)
 
 if let city = companies["Apple"]?["address"]?["city"]?.stringValue {
     print("Apple is in \(city)")
 }
 ```
 
-You can even use mutable forms in order to change the inner values. E.g. You could change the state to its full name:
+Mutations work in-place — no intermediate copies:
 
-```Swift
-var companies = try JSONDecoder().decode(JSON.self, from: companiesData)
+```swift
+var companies = try JSONDecoder().decode(JSON.self, from: data)
 
 companies["Apple"]?["address"]?["state"] = "California"
 ```
 
-# Installation
+### Constructing JSON from literals
 
-<details>
-<summary>Swift Package Manager</summary>
-</br>
-<p>You can use <a href="https://swift.org/package-manager">The Swift Package Manager</a> to install <code>SwifterJSON</code> by adding the proper description to your <code>Package.swift</code> file:</p>
+`JSON` conforms to all the `ExpressibleBy…Literal` protocols, so you can write JSON values naturally:
 
-<pre><code class="swift language-swift">import PackageDescription
+```swift
+let config: JSON = [
+    "feature_flags": [
+        "dark_mode": true,
+        "max_retries": 3,
+        "api_url": "https://api.example.com"
+    ],
+    "version": 2.1
+]
+```
 
-let package = Package(
-    name: "YOUR_PROJECT_NAME",
-    targets: [],
-    dependencies: [
-        .package(url: "https://github.com/guykogus/SwifterJSON.git", from: "4.0.0")
-    ]
-)
-</code></pre>
+### Converting between JSON and Codable types
 
-<p>Next, add <code>SwifterJSON</code> to your targets dependencies like so:</p>
-<pre><code class="swift language-swift">.target(
-    name: "YOUR_TARGET_NAME",
-    dependencies: [
-        "SwifterJSON",
-    ]
-),</code></pre>
-<p>Then run <code>swift package update</code>.</p>
-</details>
+Encode any `Encodable` value into `JSON` without going through `Data`:
 
-# License
+```swift
+struct User: Codable {
+    let name: String
+    let age: Int
+}
 
-SwifterJSON is available under the MIT license. See the LICENSE file for more info.
+let user = User(name: "Alice", age: 30)
+let json = try JSON(encodableValue: user)
+// json == ["name": "Alice", "age": 30]
+```
+
+Decode `JSON` back into a typed model:
+
+```swift
+let decoded: User = try json.decode()
+```
+
+### Accessing values
+
+Each JSON type has a corresponding accessor that returns an optional:
+
+```swift
+json.boolValue    // Bool?
+json.intValue     // Int?
+json.doubleValue  // Double?
+json.stringValue  // String?
+json.arrayValue   // [JSON]?
+json.objectValue  // [String: JSON]?
+json.isNull       // Bool
+json.count        // Int? (for arrays and objects)
+```
+
+### Array subscripting
+
+```swift
+let fibonacci: JSON = [1, 1, 2, 3, 5, 8, 13]
+fibonacci[4]?.intValue // 5
+```
+
+### Raw value interop
+
+Bridge to/from `Any` for APIs that use untyped dictionaries:
+
+```swift
+let raw: Any? = json.rawValue
+let roundTripped = JSON(rawValue: raw)
+```
+
+## License
+
+SwifterJSON is available under the MIT license. See the [LICENSE](LICENSE) file for details.

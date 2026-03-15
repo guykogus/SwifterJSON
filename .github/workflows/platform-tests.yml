@@ -1,4 +1,4 @@
-name: Apple Platform Tests
+name: Platform Tests
 
 on:
   push:
@@ -10,7 +10,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  SwiftPM:
+  Apple:
     name: ${{ matrix.platform }}
     runs-on: macos-15
     timeout-minutes: 30
@@ -42,3 +42,18 @@ jobs:
               xcodebuild clean test -workspace . -scheme SwifterJSON -destination "platform=visionOS Simulator,name=Apple Vision Pro,OS=26.2"
               ;;
           esac
+
+  Linux:
+    runs-on: [ubuntu-24.04]
+    container: swift:6.0.1
+    steps:
+      - uses: actions/checkout@v1
+      - name: Test Linux
+        run: swift test --parallel
+
+  Android:
+    runs-on: [ubuntu-24.04]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Test Android
+        uses: skiptools/swift-android-action@v2
