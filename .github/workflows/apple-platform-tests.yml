@@ -1,0 +1,44 @@
+name: Apple Platform Tests
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  SwiftPM:
+    name: ${{ matrix.platform }}
+    runs-on: macos-15
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: ['ios', 'macos', 'tvos', 'watchos', 'visionos']
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_26.2.0.app/Contents/Developer
+    steps:
+      - uses: actions/checkout@v4
+      - name: Test ${{ matrix.platform }}
+        run: |
+          set -euo pipefail
+          case "${{ matrix.platform }}" in
+            ios)
+              xcodebuild clean test -workspace . -scheme SwifterJSON -destination "platform=iOS Simulator,name=iPhone 16,OS=26.2"
+              ;;
+            tvos)
+              xcodebuild clean test -workspace . -scheme SwifterJSON -destination "platform=tvOS Simulator,name=Apple TV,OS=26.2"
+              ;;
+            macos)
+              swift test --parallel
+              ;;
+            watchos)
+              xcodebuild clean test -workspace . -scheme SwifterJSON -destination "platform=watchOS Simulator,name=Apple Watch Series 10 (46mm),OS=26.2"
+              ;;
+            visionos)
+              xcodebuild clean test -workspace . -scheme SwifterJSON -destination "platform=visionOS Simulator,name=Apple Vision Pro,OS=26.2"
+              ;;
+          esac

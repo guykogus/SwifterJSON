@@ -69,7 +69,7 @@ final class JSONTests: XCTestCase {
         XCTAssertTrue(Dummy.null.isNull)
     }
 
-    func testBool() {
+    func testBool() throws {
         XCTAssertNil(Dummy.null.boolValue)
         XCTAssertNil(Dummy.int.boolValue)
         XCTAssertNil(Dummy.double.boolValue)
@@ -78,8 +78,8 @@ final class JSONTests: XCTestCase {
         XCTAssertNil(Dummy.object.boolValue)
 
         XCTAssertNotNil(Dummy.bool.boolValue)
-        XCTAssertFalse(JSON.bool(false).boolValue!)
-        XCTAssertTrue(JSON.bool(true).boolValue!)
+        XCTAssertFalse(try XCTUnwrap(JSON.bool(false).boolValue))
+        XCTAssertTrue(try XCTUnwrap(JSON.bool(true).boolValue))
     }
 
     func testInt() {
@@ -118,7 +118,7 @@ final class JSONTests: XCTestCase {
     func testNumbers() throws {
         let numbersString = "[-0, 0, 0.0, 0.1]"
         let decoder = JSONDecoder()
-        let doublesJSON = try decoder.decode(JSON.self, from: numbersString.data(using: .utf8)!)
+        let doublesJSON = try decoder.decode(JSON.self, from: XCTUnwrap(numbersString.data(using: .utf8)))
         XCTAssertEqual(doublesJSON[0]?.intValue, 0)
         XCTAssertEqual(doublesJSON[1]?.intValue, 0)
         XCTAssertEqual(doublesJSON[2]?.intValue, 0)
@@ -257,7 +257,7 @@ final class JSONTests: XCTestCase {
             ],
         ]
 
-        XCTAssertEqual(try JSONDecoder().decode(JSON.self, from: stringValue.data(using: .utf8)!),
+        XCTAssertEqual(try JSONDecoder().decode(JSON.self, from: XCTUnwrap(stringValue.data(using: .utf8))),
                        jsonValue)
 
         let encoder = JSONEncoder()
@@ -266,10 +266,10 @@ final class JSONTests: XCTestCase {
                        stringValue)
     }
 
-    func testHelperInitialisers() {
+    func testHelperInitialisers() throws {
         XCTAssertEqual(JSON(true), true)
         XCTAssertEqual(JSON(Int8(127)), 127)
-        XCTAssertEqual(JSON(Float(3.141)).doubleValue!, 3.141, accuracy: 0.0001)
+        XCTAssertEqual(try XCTUnwrap(JSON(Float(3.141)).doubleValue), 3.141, accuracy: 0.0001)
 
         let string = "Hello world"
         XCTAssertEqual(JSON(string[string.startIndex ..< string.endIndex]), JSON(string))
@@ -311,7 +311,7 @@ final class JSONTests: XCTestCase {
     #if canImport(Foundation)
     func testInitJsonData() throws {
         let jsonString = "{\"foo\": \"bar\"}"
-        let string = try JSON(jsonData: jsonString.data(using: .utf8)!)
+        let string = try JSON(jsonData: XCTUnwrap(jsonString.data(using: .utf8)))
         XCTAssertEqual(string.rawValue as? [String: String], ["foo": "bar"])
     }
 
