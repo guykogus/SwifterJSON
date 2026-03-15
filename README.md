@@ -20,7 +20,7 @@ SwifterJSON is a lightweight, type-safe Swift `enum` for working with JSON data 
 - **Codable interop** — convert between `JSON` and any `Codable` type without round-tripping through `Data`
 - **Raw value bridging** — convert to/from `Any` for interop with APIs that use untyped dictionaries
 - **Sendable & Hashable** — safe for concurrent use and usable as dictionary keys
-- **Cross-platform** — iOS, macOS, tvOS, watchOS, visionOS, Linux, and Android
+- **Cross-platform** — iOS, macOS, tvOS, watchOS, visionOS, Linux, Android, and WebAssembly
 
 ## Requirements
 
@@ -34,6 +34,7 @@ SwifterJSON is a lightweight, type-safe Swift `enum` for working with JSON data 
 | visionOS | 1.0+ |
 | Linux | Swift 6.0 toolchain |
 | Android | Swift 6.0 toolchain |
+| WebAssembly | SwiftWasm 6.1 SDK |
 
 ## Installation
 
