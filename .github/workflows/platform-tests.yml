@@ -1,4 +1,4 @@
-name: Apple Platform Tests
+name: Platform Tests
 
 on:
   push:
@@ -10,7 +10,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  SwiftPM:
+  Apple:
     name: ${{ matrix.platform }}
     runs-on: macos-15
     timeout-minutes: 30
