@@ -38,7 +38,7 @@ jobs:
               swift test --parallel
               ;;
             watchos)
-              xcodebuild clean test -workspace . -scheme SwifterJSON -destination "platform=watchOS Simulator,name=Apple Watch Series 10 (42mm),OS=26.2"
+              xcodebuild clean test -workspace . -scheme SwifterJSON -destination "platform=watchOS Simulator,name=Any watchOS Simulator Device"
               ;;
             visionos)
               xcodebuild clean test -workspace . -scheme SwifterJSON -destination "platform=visionOS Simulator,name=Apple Vision Pro,OS=26.2"
