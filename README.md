@@ -6,9 +6,9 @@ JSON in Swift - the way it should be.
 
 # Requirements
 
-- iOS 12.0+ / macOS 10.13+ / tvOS 12.0+ / watchOS 4.0+ / visionOS 1.0+
-- Xcode 15+
-- Swift 5.9+
+- iOS 15.0+ / macOS 11.0+ / tvOS 15.0+ / watchOS 8.0+ / visionOS 1.0+
+- Xcode 26+
+- Swift 6.0+
 
 # Usage
 
