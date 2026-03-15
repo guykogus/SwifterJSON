@@ -29,18 +29,18 @@ jobs:
           set -euo pipefail
           case "${{ matrix.platform }}" in
             ios)
-              xcodebuild clean test -workspace . -scheme SwifterJSON -destination "platform=iOS Simulator,name=iPhone 16,OS=18.2"
+              xcodebuild clean test -workspace . -scheme SwifterJSON -destination "platform=iOS Simulator,name=Any iOS Simulator Device"
               ;;
             tvos)
-              xcodebuild clean test -workspace . -scheme SwifterJSON -destination "platform=tvOS Simulator,name=Apple TV"
+              xcodebuild clean test -workspace . -scheme SwifterJSON -destination "platform=tvOS Simulator,name=Any tvOS Simulator Device"
               ;;
             macos)
               swift test --parallel
               ;;
             watchos)
-              xcodebuild clean test -workspace . -scheme SwifterJSON -destination "platform=watchOS Simulator,name=Apple Watch Series 10 (42mm)"
+              xcodebuild clean test -workspace . -scheme SwifterJSON -destination "platform=watchOS Simulator,name=Any watchOS Simulator Device"
               ;;
             visionos)
-              xcodebuild clean test -workspace . -scheme SwifterJSON -destination "platform=visionOS Simulator,name=Apple Vision Pro"
+              xcodebuild clean test -workspace . -scheme SwifterJSON -destination "platform=visionOS Simulator,name=Any visionOS Simulator Device"
               ;;
           esac
