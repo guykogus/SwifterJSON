@@ -828,7 +828,7 @@ private func decodeDateFromJSON(
             let formatter = ISO8601DateFormatter()
             if let date = formatter.date(from: value) { return date }
         }
-    #if !os(Linux) && !os(Android)
+    #if !os(Linux) && !os(Android) && !os(WASI)
     case let .formatted(formatter):
         if case let .string(value) = json, let date = formatter.date(from: value) { return date }
     #endif
