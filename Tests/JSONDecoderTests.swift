@@ -83,9 +83,9 @@ struct JSONDecoderTests {
         return encoder
     }
 
-    // Generic helper: assert parity JSON vs Data for a Decodable & Equatable type
+    /// Generic helper: assert parity JSON vs Data for a Decodable & Equatable type
     private func expectParity<T: Decodable & Equatable>(
-        _ type: T.Type,
+        _: T.Type,
         json: JSON,
         configure: (JSONDecoder) -> Void = { _ in }
     ) throws {
@@ -102,9 +102,9 @@ struct JSONDecoderTests {
         #expect(fromJSON == fromData, "Decoding from JSON and Data should produce the same result.")
     }
 
-    // Generic helper for expected failure parity
+    /// Generic helper for expected failure parity
     private func expectBothThrow<T: Decodable>(
-        _ type: T.Type,
+        _: T.Type,
         json: JSON,
         configure: (JSONDecoder) -> Void = { _ in }
     ) {
@@ -156,7 +156,7 @@ struct JSONDecoderTests {
         try expectParity(Double.self, json: .double(3.5))
 
         // Optional nil parity
-        try expectParity(Optional<Bool>.self, json: .null)
+        try expectParity(Bool?.self, json: .null)
     }
 
     @Test

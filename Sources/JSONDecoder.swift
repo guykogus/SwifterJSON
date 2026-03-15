@@ -9,7 +9,7 @@
 import Foundation
 
 public extension JSONDecoder {
-    func decode<T>(_: T.Type, from: JSON) throws -> T where T: Decodable {
+    func decode<T: Decodable>(_: T.Type, from: JSON) throws -> T {
         try T(from: JSONDecoderImpl(
             codingPath: [],
             userInfo: userInfo,
@@ -52,7 +52,7 @@ private struct JSONDecoderImpl: Decoder {
         self.nonConformingFloatDecodingStrategy = nonConformingFloatDecodingStrategy
     }
 
-    func container<Key>(keyedBy _: Key.Type) throws -> KeyedDecodingContainer<Key> where Key: CodingKey {
+    func container<Key: CodingKey>(keyedBy _: Key.Type) throws -> KeyedDecodingContainer<Key> {
         try KeyedDecodingContainer(JSONKeyedDecodingContainer<Key>(
             codingPath: codingPath,
             json: json,
@@ -89,7 +89,7 @@ private struct JSONDecoderImpl: Decoder {
     }
 }
 
-private struct JSONKeyedDecodingContainer<Key>: KeyedDecodingContainerProtocol where Key: CodingKey {
+private struct JSONKeyedDecodingContainer<Key: CodingKey>: KeyedDecodingContainerProtocol {
     let codingPath: [any CodingKey]
     let json: JSON
     let userInfo: [CodingUserInfoKey: Any]
@@ -150,7 +150,7 @@ private struct JSONKeyedDecodingContainer<Key>: KeyedDecodingContainerProtocol w
         return value.isNull
     }
 
-    func nestedContainer<NestedKey>(keyedBy _: NestedKey.Type, forKey key: Key) throws -> KeyedDecodingContainer<NestedKey> where NestedKey: CodingKey {
+    func nestedContainer<NestedKey: CodingKey>(keyedBy _: NestedKey.Type, forKey key: Key) throws -> KeyedDecodingContainer<NestedKey> {
         let nestedJSON = try value(forKey: key)
         guard case .object = nestedJSON else {
             throw DecodingError.typeMismatch(
@@ -218,18 +218,43 @@ private struct JSONKeyedDecodingContainer<Key>: KeyedDecodingContainerProtocol w
         throw DecodingError.typeMismatch(Int.self, DecodingError.Context(codingPath: codingPath + [key], debugDescription: "Expected to decode Int/Double(whole), but found something else instead."))
     }
 
-    func decode(_: Int8.Type, forKey key: Key) throws -> Int8 { try Int8(decode(Int.self, forKey: key)) }
-    func decode(_: Int16.Type, forKey key: Key) throws -> Int16 { try Int16(decode(Int.self, forKey: key)) }
-    func decode(_: Int32.Type, forKey key: Key) throws -> Int32 { try Int32(decode(Int.self, forKey: key)) }
-    func decode(_: Int64.Type, forKey key: Key) throws -> Int64 { try Int64(decode(Int.self, forKey: key)) }
+    func decode(_: Int8.Type, forKey key: Key) throws -> Int8 {
+        try Int8(decode(Int.self, forKey: key))
+    }
 
-    func decode(_: UInt.Type, forKey key: Key) throws -> UInt { try UInt(decode(Int.self, forKey: key)) }
-    func decode(_: UInt8.Type, forKey key: Key) throws -> UInt8 { try UInt8(decode(Int.self, forKey: key)) }
-    func decode(_: UInt16.Type, forKey key: Key) throws -> UInt16 { try UInt16(decode(Int.self, forKey: key)) }
-    func decode(_: UInt32.Type, forKey key: Key) throws -> UInt32 { try UInt32(decode(Int.self, forKey: key)) }
-    func decode(_: UInt64.Type, forKey key: Key) throws -> UInt64 { try UInt64(decode(Int.self, forKey: key)) }
+    func decode(_: Int16.Type, forKey key: Key) throws -> Int16 {
+        try Int16(decode(Int.self, forKey: key))
+    }
 
-    func decode<T>(_: T.Type, forKey key: Key) throws -> T where T: Decodable {
+    func decode(_: Int32.Type, forKey key: Key) throws -> Int32 {
+        try Int32(decode(Int.self, forKey: key))
+    }
+
+    func decode(_: Int64.Type, forKey key: Key) throws -> Int64 {
+        try Int64(decode(Int.self, forKey: key))
+    }
+
+    func decode(_: UInt.Type, forKey key: Key) throws -> UInt {
+        try UInt(decode(Int.self, forKey: key))
+    }
+
+    func decode(_: UInt8.Type, forKey key: Key) throws -> UInt8 {
+        try UInt8(decode(Int.self, forKey: key))
+    }
+
+    func decode(_: UInt16.Type, forKey key: Key) throws -> UInt16 {
+        try UInt16(decode(Int.self, forKey: key))
+    }
+
+    func decode(_: UInt32.Type, forKey key: Key) throws -> UInt32 {
+        try UInt32(decode(Int.self, forKey: key))
+    }
+
+    func decode(_: UInt64.Type, forKey key: Key) throws -> UInt64 {
+        try UInt64(decode(Int.self, forKey: key))
+    }
+
+    func decode<T: Decodable>(_: T.Type, forKey key: Key) throws -> T {
         let value = try value(forKey: key, allowNull: true)
         let path = codingPath + [key]
         if T.self == Date.self {
@@ -330,7 +355,7 @@ private struct JSONKeyedDecodingContainer<Key>: KeyedDecodingContainerProtocol w
 
     private func decodeFloatingForKey<T: BinaryFloatingPoint>(_ key: Key) throws -> T {
         try decodeFloatingFromJSON(
-            from: try value(forKey: key),
+            from: value(forKey: key),
             codingPath: codingPath + [key],
             nonConformingFloatDecodingStrategy: nonConformingFloatDecodingStrategy
         )
@@ -340,7 +365,10 @@ private struct JSONKeyedDecodingContainer<Key>: KeyedDecodingContainerProtocol w
 private struct JSONUnkeyedDecodingContainer: UnkeyedDecodingContainer {
     let codingPath: [any CodingKey]
     private(set) var count: Int?
-    var isAtEnd: Bool { currentIndex >= (count ?? 0) }
+    var isAtEnd: Bool {
+        currentIndex >= (count ?? 0)
+    }
+
     private(set) var currentIndex: Int = 0
 
     private let array: [JSON]
@@ -427,18 +455,43 @@ private struct JSONUnkeyedDecodingContainer: UnkeyedDecodingContainer {
         throw DecodingError.typeMismatch(Int.self, DecodingError.Context(codingPath: codingPath, debugDescription: "Expected Int/Double(whole)"))
     }
 
-    mutating func decode(_: Int8.Type) throws -> Int8 { try Int8(decode(Int.self)) }
-    mutating func decode(_: Int16.Type) throws -> Int16 { try Int16(decode(Int.self)) }
-    mutating func decode(_: Int32.Type) throws -> Int32 { try Int32(decode(Int.self)) }
-    mutating func decode(_: Int64.Type) throws -> Int64 { try Int64(decode(Int.self)) }
+    mutating func decode(_: Int8.Type) throws -> Int8 {
+        try Int8(decode(Int.self))
+    }
 
-    mutating func decode(_: UInt.Type) throws -> UInt { try UInt(decode(Int.self)) }
-    mutating func decode(_: UInt8.Type) throws -> UInt8 { try UInt8(decode(Int.self)) }
-    mutating func decode(_: UInt16.Type) throws -> UInt16 { try UInt16(decode(Int.self)) }
-    mutating func decode(_: UInt32.Type) throws -> UInt32 { try UInt32(decode(Int.self)) }
-    mutating func decode(_: UInt64.Type) throws -> UInt64 { try UInt64(decode(Int.self)) }
+    mutating func decode(_: Int16.Type) throws -> Int16 {
+        try Int16(decode(Int.self))
+    }
 
-    mutating func decode<T>(_: T.Type) throws -> T where T: Decodable {
+    mutating func decode(_: Int32.Type) throws -> Int32 {
+        try Int32(decode(Int.self))
+    }
+
+    mutating func decode(_: Int64.Type) throws -> Int64 {
+        try Int64(decode(Int.self))
+    }
+
+    mutating func decode(_: UInt.Type) throws -> UInt {
+        try UInt(decode(Int.self))
+    }
+
+    mutating func decode(_: UInt8.Type) throws -> UInt8 {
+        try UInt8(decode(Int.self))
+    }
+
+    mutating func decode(_: UInt16.Type) throws -> UInt16 {
+        try UInt16(decode(Int.self))
+    }
+
+    mutating func decode(_: UInt32.Type) throws -> UInt32 {
+        try UInt32(decode(Int.self))
+    }
+
+    mutating func decode(_: UInt64.Type) throws -> UInt64 {
+        try UInt64(decode(Int.self))
+    }
+
+    mutating func decode<T: Decodable>(_: T.Type) throws -> T {
         let value = try pop()
         let indexKey = JSONIndexCodingKey(intValue: currentIndex - 1)
         let path = codingPath + [indexKey]
@@ -478,7 +531,7 @@ private struct JSONUnkeyedDecodingContainer: UnkeyedDecodingContainer {
         return try T(from: decoder)
     }
 
-    mutating func nestedContainer<NestedKey>(keyedBy _: NestedKey.Type) throws -> KeyedDecodingContainer<NestedKey> where NestedKey: CodingKey {
+    mutating func nestedContainer<NestedKey: CodingKey>(keyedBy _: NestedKey.Type) throws -> KeyedDecodingContainer<NestedKey> {
         let idxKey = JSONIndexCodingKey(intValue: currentIndex)
         let nestedJSON = try pop()
         guard case .object = nestedJSON else {
@@ -596,18 +649,43 @@ private struct JSONSingleValueDecodingContainer: SingleValueDecodingContainer {
         throw DecodingError.typeMismatch(Int.self, DecodingError.Context(codingPath: codingPath, debugDescription: "Expected Int/Double(whole)"))
     }
 
-    func decode(_: Int8.Type) throws -> Int8 { try Int8(decode(Int.self)) }
-    func decode(_: Int16.Type) throws -> Int16 { try Int16(decode(Int.self)) }
-    func decode(_: Int32.Type) throws -> Int32 { try Int32(decode(Int.self)) }
-    func decode(_: Int64.Type) throws -> Int64 { try Int64(decode(Int.self)) }
+    func decode(_: Int8.Type) throws -> Int8 {
+        try Int8(decode(Int.self))
+    }
 
-    func decode(_: UInt.Type) throws -> UInt { try UInt(decode(Int.self)) }
-    func decode(_: UInt8.Type) throws -> UInt8 { try UInt8(decode(Int.self)) }
-    func decode(_: UInt16.Type) throws -> UInt16 { try UInt16(decode(Int.self)) }
-    func decode(_: UInt32.Type) throws -> UInt32 { try UInt32(decode(Int.self)) }
-    func decode(_: UInt64.Type) throws -> UInt64 { try UInt64(decode(Int.self)) }
+    func decode(_: Int16.Type) throws -> Int16 {
+        try Int16(decode(Int.self))
+    }
 
-    func decode<T>(_: T.Type) throws -> T where T: Decodable {
+    func decode(_: Int32.Type) throws -> Int32 {
+        try Int32(decode(Int.self))
+    }
+
+    func decode(_: Int64.Type) throws -> Int64 {
+        try Int64(decode(Int.self))
+    }
+
+    func decode(_: UInt.Type) throws -> UInt {
+        try UInt(decode(Int.self))
+    }
+
+    func decode(_: UInt8.Type) throws -> UInt8 {
+        try UInt8(decode(Int.self))
+    }
+
+    func decode(_: UInt16.Type) throws -> UInt16 {
+        try UInt16(decode(Int.self))
+    }
+
+    func decode(_: UInt32.Type) throws -> UInt32 {
+        try UInt32(decode(Int.self))
+    }
+
+    func decode(_: UInt64.Type) throws -> UInt64 {
+        try UInt64(decode(Int.self))
+    }
+
+    func decode<T: Decodable>(_: T.Type) throws -> T {
         if T.self == Date.self {
             let date = try decodeDateFromJSON(
                 from: json,
@@ -677,12 +755,12 @@ private struct AnyTempKey: CodingKey {
 
     init(stringValue: String) {
         self.stringValue = stringValue
-        self.intValue = Int(stringValue)
+        intValue = Int(stringValue)
     }
 
     init?(intValue: Int) {
         self.intValue = intValue
-        self.stringValue = String(intValue)
+        stringValue = String(intValue)
     }
 }
 
