@@ -28,9 +28,10 @@ SwifterJSON is a lightweight, type-safe Swift `enum` for working with JSON data 
 |---|---|
 | Swift | 6.0+ |
 | iOS | 15.0+ |
-| macOS | 11.0+ |
+| macOS | 12.0+ |
+| macCatalyst | 15.0+ |
 | tvOS | 15.0+ |
-| watchOS | 8.0+ |
+| watchOS | 9.0+ |
 | visionOS | 1.0+ |
 | Linux | Swift 6.0 toolchain |
 | Android | Swift 6.0 toolchain |

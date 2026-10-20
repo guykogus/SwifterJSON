@@ -6,10 +6,11 @@ let package = Package(
     name: "SwifterJSON",
     platforms: [
         .iOS(.v15),
-        .macOS(.v11),
+        .macOS(.v12),
+        .macCatalyst(.v15),
         .tvOS(.v15),
         .visionOS(.v1),
-        .watchOS(.v8),
+        .watchOS(.v9)
     ],
     products: [
         .library(
