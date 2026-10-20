@@ -10,7 +10,7 @@ let package = Package(
         .macCatalyst(.v15),
         .tvOS(.v15),
         .visionOS(.v1),
-        .watchOS(.v9)
+        .watchOS(.v9),
     ],
     products: [
         .library(

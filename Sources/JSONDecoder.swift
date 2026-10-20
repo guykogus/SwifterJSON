@@ -213,8 +213,12 @@ private struct JSONKeyedDecodingContainer<Key: CodingKey>: KeyedDecodingContaine
 
     func decode(_: Int.Type, forKey key: Key) throws -> Int {
         let value = try value(forKey: key)
-        if case let .int(i) = value { return i }
-        if case let .double(d) = value, d == d.rounded() { return Int(d) }
+        if case let .int(i) = value {
+            return i
+        }
+        if case let .double(d) = value, d == d.rounded() {
+            return Int(d)
+        }
         throw DecodingError.typeMismatch(Int.self, DecodingError.Context(codingPath: codingPath + [key], debugDescription: "Expected to decode Int/Double(whole), but found something else instead."))
     }
 
@@ -450,8 +454,12 @@ private struct JSONUnkeyedDecodingContainer: UnkeyedDecodingContainer {
 
     mutating func decode(_: Int.Type) throws -> Int {
         let v = try pop()
-        if case let .int(i) = v { return i }
-        if case let .double(d) = v, d == d.rounded() { return Int(d) }
+        if case let .int(i) = v {
+            return i
+        }
+        if case let .double(d) = v, d == d.rounded() {
+            return Int(d)
+        }
         throw DecodingError.typeMismatch(Int.self, DecodingError.Context(codingPath: codingPath, debugDescription: "Expected Int/Double(whole)"))
     }
 
@@ -644,8 +652,12 @@ private struct JSONSingleValueDecodingContainer: SingleValueDecodingContainer {
     }
 
     func decode(_: Int.Type) throws -> Int {
-        if case let .int(i) = json { return i }
-        if case let .double(d) = json, d == d.rounded() { return Int(d) }
+        if case let .int(i) = json {
+            return i
+        }
+        if case let .double(d) = json, d == d.rounded() {
+            return Int(d)
+        }
         throw DecodingError.typeMismatch(Int.self, DecodingError.Context(codingPath: codingPath, debugDescription: "Expected Int/Double(whole)"))
     }
 
@@ -769,14 +781,24 @@ private func decodeFloatingFromJSON<T: BinaryFloatingPoint>(
     codingPath: [any CodingKey],
     nonConformingFloatDecodingStrategy: JSONDecoder.NonConformingFloatDecodingStrategy
 ) throws -> T {
-    if case let .double(value) = json { return T(value) }
-    if case let .int(value) = json { return T(value) }
+    if case let .double(value) = json {
+        return T(value)
+    }
+    if case let .int(value) = json {
+        return T(value)
+    }
     if case let .string(value) = json {
         switch nonConformingFloatDecodingStrategy {
         case let .convertFromString(positiveInfinity, negativeInfinity, nan):
-            if value == positiveInfinity { return T.infinity }
-            if value == negativeInfinity { return -T.infinity }
-            if value == nan { return T.nan }
+            if value == positiveInfinity {
+                return T.infinity
+            }
+            if value == negativeInfinity {
+                return -T.infinity
+            }
+            if value == nan {
+                return T.nan
+            }
         case .throw:
             throw DecodingError.dataCorrupted(
                 DecodingError.Context(
@@ -820,17 +842,25 @@ private func decodeDateFromJSON(
             nonConformingFloatDecodingStrategy: nonConformingFloatDecodingStrategy
         ))
     case .secondsSince1970:
-        if let value = json.doubleValue { return Date(timeIntervalSince1970: value) }
+        if let value = json.doubleValue {
+            return Date(timeIntervalSince1970: value)
+        }
     case .millisecondsSince1970:
-        if let value = json.doubleValue { return Date(timeIntervalSince1970: value / 1000.0) }
+        if let value = json.doubleValue {
+            return Date(timeIntervalSince1970: value / 1000.0)
+        }
     case .iso8601:
         if case let .string(value) = json {
             let formatter = ISO8601DateFormatter()
-            if let date = formatter.date(from: value) { return date }
+            if let date = formatter.date(from: value) {
+                return date
+            }
         }
     #if !os(Linux) && !os(Android) && !os(WASI)
     case let .formatted(formatter):
-        if case let .string(value) = json, let date = formatter.date(from: value) { return date }
+        if case let .string(value) = json, let date = formatter.date(from: value) {
+            return date
+        }
     #endif
     case let .custom(block):
         return try block(JSONDecoderImpl(
@@ -869,7 +899,9 @@ private func decodeDataFromJSON(
             nonConformingFloatDecodingStrategy: nonConformingFloatDecodingStrategy
         ))
     case .base64:
-        if case let .string(value) = json, let data = Data(base64Encoded: value) { return data }
+        if case let .string(value) = json, let data = Data(base64Encoded: value) {
+            return data
+        }
     case let .custom(block):
         return try block(JSONDecoderImpl(
             codingPath: path,
