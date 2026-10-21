@@ -63,12 +63,17 @@ jobs:
 
   WASM:
     runs-on: ubuntu-26.04
-    container: swift:6.4
+    container: swift:6.4.1
     steps:
       - uses: actions/checkout@v4
       - name: Install Swift SDK for WebAssembly
-        run: swift sdk install https://github.com/swiftwasm/swift/releases/download/swift-wasm-6.3-RELEASE/swift-wasm-6.3-RELEASE-wasm32-unknown-wasip1.artifactbundle.zip --checksum 6704d137e532f1ac31eafedd80658f9ee61239f2b6291216a02da32361ea9dcb
-      - name: Print Swift SDK list
-        run: swift sdk list
+        run: >-
+          swift sdk install
+          https://download.swift.org/swift-6.4.1-release/wasm-sdk/swift-6.4.1-RELEASE/swift-6.4.1-RELEASE_wasm.artifactbundle.tar.gz
+          --checksum 783e6128d174d9f975b4eda68be02a5960681b723ef372e6876a7c2543a365d8
+      - name: Print Swift versions
+        run: |
+          swift --version
+          swift sdk list
       - name: Build for WASM
-        run: swift build --swift-sdk 6.3-RELEASE-wasm32-unknown-wasip1
+        run: swift build --swift-sdk swift-6.4.1-RELEASE_wasm

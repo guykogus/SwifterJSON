@@ -25,6 +25,7 @@ let package = Package(
         .testTarget(
             name: "SwifterJSONTests",
             dependencies: ["SwifterJSON"],
+            exclude: ["Info.plist"],
         ),
     ],
 )
