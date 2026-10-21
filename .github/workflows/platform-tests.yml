@@ -27,10 +27,10 @@ jobs:
           set -euo pipefail
           case "${{ matrix.platform }}" in
             ios)
-              xcodebuild clean test -workspace . -scheme SwifterJSON -destination "platform=iOS Simulator,name=iPhone 16,OS=26.2"
+              xcodebuild clean test -workspace . -scheme SwifterJSON -destination "platform=iOS Simulator,name=Any iOS Simulator Device"
               ;;
             tvos)
-              xcodebuild clean test -workspace . -scheme SwifterJSON -destination "platform=tvOS Simulator,name=Apple TV,OS=26.2"
+              xcodebuild clean test -workspace . -scheme SwifterJSON -destination "platform=tvOS Simulator,name=Any tvOS Device"
               ;;
             macos)
               swift test --parallel
@@ -39,10 +39,10 @@ jobs:
               xcodebuild clean test -workspace . -scheme SwifterJSON -destination "platform=macOS,variant=Mac Catalyst"
               ;;
             watchos)
-              xcodebuild clean test -workspace . -scheme SwifterJSON -destination "platform=watchOS Simulator,name=Apple Watch Series 10 (46mm),OS=26.2"
+              xcodebuild clean test -workspace . -scheme SwifterJSON -destination "platform=watchOS Simulator,name=Any watchOS Device"
               ;;
             visionos)
-              xcodebuild clean test -workspace . -scheme SwifterJSON -destination "platform=visionOS Simulator,name=Apple Vision Pro,OS=26.2"
+              xcodebuild clean test -workspace . -scheme SwifterJSON -destination "platform=visionOS Simulator,name=Any visionOS Device"
               ;;
           esac
 
@@ -68,5 +68,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: Install Swift SDK for WebAssembly
         run: swift sdk install https://github.com/swiftwasm/swift/releases/download/swift-wasm-6.3-RELEASE/swift-wasm-6.3-RELEASE-wasm32-unknown-wasip1.artifactbundle.zip --checksum 6704d137e532f1ac31eafedd80658f9ee61239f2b6291216a02da32361ea9dcb
+      - name: Print Swift SDK list
+        run: swift sdk list
       - name: Build for WASM
-        run: swift build --swift-sdk wasm32-unknown-wasi
+        run: swift build --swift-sdk wasm32-unknown-wasip1
