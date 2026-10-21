@@ -12,14 +12,14 @@ on:
 jobs:
   Apple:
     name: ${{ matrix.platform }}
-    runs-on: macos-15
+    runs-on: xcode-27
     timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
-        platform: ['ios', 'macos', 'tvos', 'watchos', 'visionos']
+        platform: ['ios', 'macos', 'maccatalyst', 'tvos', 'visionos', 'watchos']
     env:
-      DEVELOPER_DIR: /Applications/Xcode_26.2.0.app/Contents/Developer
+      DEVELOPER_DIR: /Applications/Xcode_27.app/Contents/Developer
     steps:
       - uses: actions/checkout@v4
       - name: Test ${{ matrix.platform }}
@@ -35,6 +35,9 @@ jobs:
             macos)
               swift test --parallel
               ;;
+            maccatalyst)
+              xcodebuild clean test -workspace . -scheme SwifterJSON -destination "platform=macOS,variant=Mac Catalyst"
+              ;;
             watchos)
               xcodebuild clean test -workspace . -scheme SwifterJSON -destination "platform=watchOS Simulator,name=Apple Watch Series 10 (46mm),OS=26.2"
               ;;
@@ -44,26 +47,26 @@ jobs:
           esac
 
   Linux:
-    runs-on: ubuntu-24.04
-    container: swift:6.0.1
+    runs-on: ubuntu-26.04
+    container: swift:6.4
     steps:
       - uses: actions/checkout@v1
       - name: Test Linux
         run: swift test --parallel
 
   Android:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     steps:
       - uses: actions/checkout@v4
       - name: Test Android
         uses: skiptools/swift-android-action@v2
 
   WASM:
-    runs-on: ubuntu-24.04
-    container: swift:6.1
+    runs-on: ubuntu-26.04
+    container: swift:6.4
     steps:
       - uses: actions/checkout@v4
       - name: Install Swift SDK for WebAssembly
-        run: swift sdk install "https://github.com/swiftwasm/swift/releases/download/swift-wasm-6.1-RELEASE/swift-wasm-6.1-RELEASE-wasm32-unknown-wasi.artifactbundle.zip" --checksum "7550b4c77a55f4b637c376f5d192f297fe185607003a6212ad608276928db992"
+        run: swift sdk install https://github.com/swiftwasm/swift/releases/download/swift-wasm-6.3-RELEASE/swift-wasm-6.3-RELEASE-wasm32-unknown-wasip1.artifactbundle.zip --checksum 6704d137e532f1ac31eafedd80658f9ee61239f2b6291216a02da32361ea9dcb
       - name: Build for WASM
         run: swift build --swift-sdk wasm32-unknown-wasi

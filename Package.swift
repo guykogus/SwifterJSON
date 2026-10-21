@@ -1,4 +1,4 @@
-// swift-tools-version:6.0
+// swift-tools-version:6.3
 
 import PackageDescription
 
@@ -15,16 +15,16 @@ let package = Package(
     products: [
         .library(
             name: "SwifterJSON",
-            targets: ["SwifterJSON"]
+            targets: ["SwifterJSON"],
         ),
     ],
     targets: [
         .target(
-            name: "SwifterJSON"
+            name: "SwifterJSON",
         ),
         .testTarget(
             name: "SwifterJSONTests",
-            dependencies: ["SwifterJSON"]
+            dependencies: ["SwifterJSON"],
         ),
-    ]
+    ],
 )

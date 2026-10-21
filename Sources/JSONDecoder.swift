@@ -17,7 +17,7 @@ public extension JSONDecoder {
             keyDecodingStrategy: keyDecodingStrategy,
             dateDecodingStrategy: dateDecodingStrategy,
             dataDecodingStrategy: dataDecodingStrategy,
-            nonConformingFloatDecodingStrategy: nonConformingFloatDecodingStrategy
+            nonConformingFloatDecodingStrategy: nonConformingFloatDecodingStrategy,
         ))
     }
 }
@@ -41,7 +41,7 @@ private struct JSONDecoderImpl: Decoder {
         keyDecodingStrategy: JSONDecoder.KeyDecodingStrategy,
         dateDecodingStrategy: JSONDecoder.DateDecodingStrategy,
         dataDecodingStrategy: JSONDecoder.DataDecodingStrategy,
-        nonConformingFloatDecodingStrategy: JSONDecoder.NonConformingFloatDecodingStrategy
+        nonConformingFloatDecodingStrategy: JSONDecoder.NonConformingFloatDecodingStrategy,
     ) {
         self.codingPath = codingPath
         self.userInfo = userInfo
@@ -60,7 +60,7 @@ private struct JSONDecoderImpl: Decoder {
             keyDecodingStrategy: keyDecodingStrategy,
             dateDecodingStrategy: dateDecodingStrategy,
             dataDecodingStrategy: dataDecodingStrategy,
-            nonConformingFloatDecodingStrategy: nonConformingFloatDecodingStrategy
+            nonConformingFloatDecodingStrategy: nonConformingFloatDecodingStrategy,
         ))
     }
 
@@ -72,7 +72,7 @@ private struct JSONDecoderImpl: Decoder {
             keyDecodingStrategy: keyDecodingStrategy,
             dateDecodingStrategy: dateDecodingStrategy,
             dataDecodingStrategy: dataDecodingStrategy,
-            nonConformingFloatDecodingStrategy: nonConformingFloatDecodingStrategy
+            nonConformingFloatDecodingStrategy: nonConformingFloatDecodingStrategy,
         )
     }
 
@@ -84,7 +84,7 @@ private struct JSONDecoderImpl: Decoder {
             keyDecodingStrategy: keyDecodingStrategy,
             dateDecodingStrategy: dateDecodingStrategy,
             dataDecodingStrategy: dataDecodingStrategy,
-            nonConformingFloatDecodingStrategy: nonConformingFloatDecodingStrategy
+            nonConformingFloatDecodingStrategy: nonConformingFloatDecodingStrategy,
         )
     }
 }
@@ -124,12 +124,12 @@ private struct JSONKeyedDecodingContainer<Key: CodingKey>: KeyedDecodingContaine
         keyDecodingStrategy: JSONDecoder.KeyDecodingStrategy,
         dateDecodingStrategy: JSONDecoder.DateDecodingStrategy,
         dataDecodingStrategy: JSONDecoder.DataDecodingStrategy,
-        nonConformingFloatDecodingStrategy: JSONDecoder.NonConformingFloatDecodingStrategy
+        nonConformingFloatDecodingStrategy: JSONDecoder.NonConformingFloatDecodingStrategy,
     ) throws {
         guard case .object = json else {
             throw DecodingError.typeMismatch(
                 [String: JSON].self,
-                DecodingError.Context(codingPath: codingPath, debugDescription: "Expected object for keyed container.")
+                DecodingError.Context(codingPath: codingPath, debugDescription: "Expected object for keyed container."),
             )
         }
         self.codingPath = codingPath
@@ -155,7 +155,7 @@ private struct JSONKeyedDecodingContainer<Key: CodingKey>: KeyedDecodingContaine
         guard case .object = nestedJSON else {
             throw DecodingError.typeMismatch(
                 JSON.self,
-                DecodingError.Context(codingPath: codingPath + [key], debugDescription: "Keyed container value was not an object.")
+                DecodingError.Context(codingPath: codingPath + [key], debugDescription: "Keyed container value was not an object."),
             )
         }
 
@@ -166,7 +166,7 @@ private struct JSONKeyedDecodingContainer<Key: CodingKey>: KeyedDecodingContaine
             keyDecodingStrategy: keyDecodingStrategy,
             dateDecodingStrategy: dateDecodingStrategy,
             dataDecodingStrategy: dataDecodingStrategy,
-            nonConformingFloatDecodingStrategy: nonConformingFloatDecodingStrategy
+            nonConformingFloatDecodingStrategy: nonConformingFloatDecodingStrategy,
         ))
     }
 
@@ -175,7 +175,7 @@ private struct JSONKeyedDecodingContainer<Key: CodingKey>: KeyedDecodingContaine
         guard case .array = nestedJSON else {
             throw DecodingError.typeMismatch(
                 JSON.self,
-                DecodingError.Context(codingPath: codingPath + [key], debugDescription: "Unkeyed container value was not an array.")
+                DecodingError.Context(codingPath: codingPath + [key], debugDescription: "Unkeyed container value was not an array."),
             )
         }
         return try JSONUnkeyedDecodingContainer(
@@ -185,7 +185,7 @@ private struct JSONKeyedDecodingContainer<Key: CodingKey>: KeyedDecodingContaine
             keyDecodingStrategy: keyDecodingStrategy,
             dateDecodingStrategy: dateDecodingStrategy,
             dataDecodingStrategy: dataDecodingStrategy,
-            nonConformingFloatDecodingStrategy: nonConformingFloatDecodingStrategy
+            nonConformingFloatDecodingStrategy: nonConformingFloatDecodingStrategy,
         )
     }
 
@@ -269,7 +269,7 @@ private struct JSONKeyedDecodingContainer<Key: CodingKey>: KeyedDecodingContaine
                 keyDecodingStrategy: keyDecodingStrategy,
                 dateDecodingStrategy: dateDecodingStrategy,
                 dataDecodingStrategy: dataDecodingStrategy,
-                nonConformingFloatDecodingStrategy: nonConformingFloatDecodingStrategy
+                nonConformingFloatDecodingStrategy: nonConformingFloatDecodingStrategy,
             )
             return date as! T
         }
@@ -281,7 +281,7 @@ private struct JSONKeyedDecodingContainer<Key: CodingKey>: KeyedDecodingContaine
                 keyDecodingStrategy: keyDecodingStrategy,
                 dateDecodingStrategy: dateDecodingStrategy,
                 dataDecodingStrategy: dataDecodingStrategy,
-                nonConformingFloatDecodingStrategy: nonConformingFloatDecodingStrategy
+                nonConformingFloatDecodingStrategy: nonConformingFloatDecodingStrategy,
             )
             return data as! T
         }
@@ -292,7 +292,7 @@ private struct JSONKeyedDecodingContainer<Key: CodingKey>: KeyedDecodingContaine
             keyDecodingStrategy: keyDecodingStrategy,
             dateDecodingStrategy: dateDecodingStrategy,
             dataDecodingStrategy: dataDecodingStrategy,
-            nonConformingFloatDecodingStrategy: nonConformingFloatDecodingStrategy
+            nonConformingFloatDecodingStrategy: nonConformingFloatDecodingStrategy,
         )
         return try T(from: decoder)
     }
@@ -305,7 +305,7 @@ private struct JSONKeyedDecodingContainer<Key: CodingKey>: KeyedDecodingContaine
             keyDecodingStrategy: keyDecodingStrategy,
             dateDecodingStrategy: dateDecodingStrategy,
             dataDecodingStrategy: dataDecodingStrategy,
-            nonConformingFloatDecodingStrategy: nonConformingFloatDecodingStrategy
+            nonConformingFloatDecodingStrategy: nonConformingFloatDecodingStrategy,
         )
     }
 
@@ -317,7 +317,7 @@ private struct JSONKeyedDecodingContainer<Key: CodingKey>: KeyedDecodingContaine
             keyDecodingStrategy: keyDecodingStrategy,
             dateDecodingStrategy: dateDecodingStrategy,
             dataDecodingStrategy: dataDecodingStrategy,
-            nonConformingFloatDecodingStrategy: nonConformingFloatDecodingStrategy
+            nonConformingFloatDecodingStrategy: nonConformingFloatDecodingStrategy,
         )
     }
 
@@ -361,7 +361,7 @@ private struct JSONKeyedDecodingContainer<Key: CodingKey>: KeyedDecodingContaine
         try decodeFloatingFromJSON(
             from: value(forKey: key),
             codingPath: codingPath + [key],
-            nonConformingFloatDecodingStrategy: nonConformingFloatDecodingStrategy
+            nonConformingFloatDecodingStrategy: nonConformingFloatDecodingStrategy,
         )
     }
 }
@@ -391,12 +391,12 @@ private struct JSONUnkeyedDecodingContainer: UnkeyedDecodingContainer {
         keyDecodingStrategy: JSONDecoder.KeyDecodingStrategy,
         dateDecodingStrategy: JSONDecoder.DateDecodingStrategy,
         dataDecodingStrategy: JSONDecoder.DataDecodingStrategy,
-        nonConformingFloatDecodingStrategy: JSONDecoder.NonConformingFloatDecodingStrategy
+        nonConformingFloatDecodingStrategy: JSONDecoder.NonConformingFloatDecodingStrategy,
     ) throws {
         guard case let .array(array) = json else {
             throw DecodingError.typeMismatch(
                 JSON.self,
-                DecodingError.Context(codingPath: codingPath, debugDescription: "Unkeyed container value was not an array.")
+                DecodingError.Context(codingPath: codingPath, debugDescription: "Unkeyed container value was not an array."),
             )
         }
         self.codingPath = codingPath
@@ -511,7 +511,7 @@ private struct JSONUnkeyedDecodingContainer: UnkeyedDecodingContainer {
                 keyDecodingStrategy: keyDecodingStrategy,
                 dateDecodingStrategy: dateDecodingStrategy,
                 dataDecodingStrategy: dataDecodingStrategy,
-                nonConformingFloatDecodingStrategy: nonConformingFloatDecodingStrategy
+                nonConformingFloatDecodingStrategy: nonConformingFloatDecodingStrategy,
             )
             return date as! T
         }
@@ -523,7 +523,7 @@ private struct JSONUnkeyedDecodingContainer: UnkeyedDecodingContainer {
                 keyDecodingStrategy: keyDecodingStrategy,
                 dateDecodingStrategy: dateDecodingStrategy,
                 dataDecodingStrategy: dataDecodingStrategy,
-                nonConformingFloatDecodingStrategy: nonConformingFloatDecodingStrategy
+                nonConformingFloatDecodingStrategy: nonConformingFloatDecodingStrategy,
             )
             return data as! T
         }
@@ -534,7 +534,7 @@ private struct JSONUnkeyedDecodingContainer: UnkeyedDecodingContainer {
             keyDecodingStrategy: keyDecodingStrategy,
             dateDecodingStrategy: dateDecodingStrategy,
             dataDecodingStrategy: dataDecodingStrategy,
-            nonConformingFloatDecodingStrategy: nonConformingFloatDecodingStrategy
+            nonConformingFloatDecodingStrategy: nonConformingFloatDecodingStrategy,
         )
         return try T(from: decoder)
     }
@@ -552,7 +552,7 @@ private struct JSONUnkeyedDecodingContainer: UnkeyedDecodingContainer {
             keyDecodingStrategy: keyDecodingStrategy,
             dateDecodingStrategy: dateDecodingStrategy,
             dataDecodingStrategy: dataDecodingStrategy,
-            nonConformingFloatDecodingStrategy: nonConformingFloatDecodingStrategy
+            nonConformingFloatDecodingStrategy: nonConformingFloatDecodingStrategy,
         ))
     }
 
@@ -566,7 +566,7 @@ private struct JSONUnkeyedDecodingContainer: UnkeyedDecodingContainer {
             keyDecodingStrategy: keyDecodingStrategy,
             dateDecodingStrategy: dateDecodingStrategy,
             dataDecodingStrategy: dataDecodingStrategy,
-            nonConformingFloatDecodingStrategy: nonConformingFloatDecodingStrategy
+            nonConformingFloatDecodingStrategy: nonConformingFloatDecodingStrategy,
         )
     }
 
@@ -580,7 +580,7 @@ private struct JSONUnkeyedDecodingContainer: UnkeyedDecodingContainer {
             keyDecodingStrategy: keyDecodingStrategy,
             dateDecodingStrategy: dateDecodingStrategy,
             dataDecodingStrategy: dataDecodingStrategy,
-            nonConformingFloatDecodingStrategy: nonConformingFloatDecodingStrategy
+            nonConformingFloatDecodingStrategy: nonConformingFloatDecodingStrategy,
         )
     }
 
@@ -592,7 +592,7 @@ private struct JSONUnkeyedDecodingContainer: UnkeyedDecodingContainer {
         return try decodeFloatingFromJSON(
             from: value,
             codingPath: codingPath + [indexKey],
-            nonConformingFloatDecodingStrategy: nonConformingFloatDecodingStrategy
+            nonConformingFloatDecodingStrategy: nonConformingFloatDecodingStrategy,
         )
     }
 }
@@ -614,7 +614,7 @@ private struct JSONSingleValueDecodingContainer: SingleValueDecodingContainer {
         keyDecodingStrategy: JSONDecoder.KeyDecodingStrategy,
         dateDecodingStrategy: JSONDecoder.DateDecodingStrategy,
         dataDecodingStrategy: JSONDecoder.DataDecodingStrategy,
-        nonConformingFloatDecodingStrategy: JSONDecoder.NonConformingFloatDecodingStrategy
+        nonConformingFloatDecodingStrategy: JSONDecoder.NonConformingFloatDecodingStrategy,
     ) throws {
         self.codingPath = codingPath
         self.json = json
@@ -706,7 +706,7 @@ private struct JSONSingleValueDecodingContainer: SingleValueDecodingContainer {
                 keyDecodingStrategy: keyDecodingStrategy,
                 dateDecodingStrategy: dateDecodingStrategy,
                 dataDecodingStrategy: dataDecodingStrategy,
-                nonConformingFloatDecodingStrategy: nonConformingFloatDecodingStrategy
+                nonConformingFloatDecodingStrategy: nonConformingFloatDecodingStrategy,
             )
             return date as! T
         }
@@ -718,7 +718,7 @@ private struct JSONSingleValueDecodingContainer: SingleValueDecodingContainer {
                 keyDecodingStrategy: keyDecodingStrategy,
                 dateDecodingStrategy: dateDecodingStrategy,
                 dataDecodingStrategy: dataDecodingStrategy,
-                nonConformingFloatDecodingStrategy: nonConformingFloatDecodingStrategy
+                nonConformingFloatDecodingStrategy: nonConformingFloatDecodingStrategy,
             )
             return data as! T
         }
@@ -729,7 +729,7 @@ private struct JSONSingleValueDecodingContainer: SingleValueDecodingContainer {
             keyDecodingStrategy: keyDecodingStrategy,
             dateDecodingStrategy: dateDecodingStrategy,
             dataDecodingStrategy: dataDecodingStrategy,
-            nonConformingFloatDecodingStrategy: nonConformingFloatDecodingStrategy
+            nonConformingFloatDecodingStrategy: nonConformingFloatDecodingStrategy,
         ))
     }
 
@@ -739,7 +739,7 @@ private struct JSONSingleValueDecodingContainer: SingleValueDecodingContainer {
         try decodeFloatingFromJSON(
             from: json,
             codingPath: codingPath,
-            nonConformingFloatDecodingStrategy: nonConformingFloatDecodingStrategy
+            nonConformingFloatDecodingStrategy: nonConformingFloatDecodingStrategy,
         )
     }
 }
@@ -779,7 +779,7 @@ private struct AnyTempKey: CodingKey {
 private func decodeFloatingFromJSON<T: BinaryFloatingPoint>(
     from json: JSON,
     codingPath: [any CodingKey],
-    nonConformingFloatDecodingStrategy: JSONDecoder.NonConformingFloatDecodingStrategy
+    nonConformingFloatDecodingStrategy: JSONDecoder.NonConformingFloatDecodingStrategy,
 ) throws -> T {
     if case let .double(value) = json {
         return T(value)
@@ -803,21 +803,21 @@ private func decodeFloatingFromJSON<T: BinaryFloatingPoint>(
             throw DecodingError.dataCorrupted(
                 DecodingError.Context(
                     codingPath: codingPath,
-                    debugDescription: "String value '\(value)' does not match non-conforming float symbols."
-                )
+                    debugDescription: "String value '\(value)' does not match non-conforming float symbols.",
+                ),
             )
         @unknown default:
             throw DecodingError.dataCorrupted(
                 DecodingError.Context(
                     codingPath: codingPath,
-                    debugDescription: "Unsupported nonConformingFloatDecodingStrategy."
-                )
+                    debugDescription: "Unsupported nonConformingFloatDecodingStrategy.",
+                ),
             )
         }
     }
     throw DecodingError.typeMismatch(
         T.self,
-        DecodingError.Context(codingPath: codingPath, debugDescription: "Expected to decode \(T.self)")
+        DecodingError.Context(codingPath: codingPath, debugDescription: "Expected to decode \(T.self)"),
     )
 }
 
@@ -828,7 +828,7 @@ private func decodeDateFromJSON(
     keyDecodingStrategy: JSONDecoder.KeyDecodingStrategy,
     dateDecodingStrategy: JSONDecoder.DateDecodingStrategy,
     dataDecodingStrategy: JSONDecoder.DataDecodingStrategy,
-    nonConformingFloatDecodingStrategy: JSONDecoder.NonConformingFloatDecodingStrategy
+    nonConformingFloatDecodingStrategy: JSONDecoder.NonConformingFloatDecodingStrategy,
 ) throws -> Date {
     switch dateDecodingStrategy {
     case .deferredToDate:
@@ -839,7 +839,7 @@ private func decodeDateFromJSON(
             keyDecodingStrategy: keyDecodingStrategy,
             dateDecodingStrategy: dateDecodingStrategy,
             dataDecodingStrategy: dataDecodingStrategy,
-            nonConformingFloatDecodingStrategy: nonConformingFloatDecodingStrategy
+            nonConformingFloatDecodingStrategy: nonConformingFloatDecodingStrategy,
         ))
     case .secondsSince1970:
         if let value = json.doubleValue {
@@ -870,7 +870,7 @@ private func decodeDateFromJSON(
             keyDecodingStrategy: keyDecodingStrategy,
             dateDecodingStrategy: dateDecodingStrategy,
             dataDecodingStrategy: dataDecodingStrategy,
-            nonConformingFloatDecodingStrategy: nonConformingFloatDecodingStrategy
+            nonConformingFloatDecodingStrategy: nonConformingFloatDecodingStrategy,
         ))
     @unknown default:
         break
@@ -885,7 +885,7 @@ private func decodeDataFromJSON(
     keyDecodingStrategy: JSONDecoder.KeyDecodingStrategy,
     dateDecodingStrategy: JSONDecoder.DateDecodingStrategy,
     dataDecodingStrategy: JSONDecoder.DataDecodingStrategy,
-    nonConformingFloatDecodingStrategy: JSONDecoder.NonConformingFloatDecodingStrategy
+    nonConformingFloatDecodingStrategy: JSONDecoder.NonConformingFloatDecodingStrategy,
 ) throws -> Data {
     switch dataDecodingStrategy {
     case .deferredToData:
@@ -896,7 +896,7 @@ private func decodeDataFromJSON(
             keyDecodingStrategy: keyDecodingStrategy,
             dateDecodingStrategy: dateDecodingStrategy,
             dataDecodingStrategy: dataDecodingStrategy,
-            nonConformingFloatDecodingStrategy: nonConformingFloatDecodingStrategy
+            nonConformingFloatDecodingStrategy: nonConformingFloatDecodingStrategy,
         ))
     case .base64:
         if case let .string(value) = json, let data = Data(base64Encoded: value) {
@@ -910,7 +910,7 @@ private func decodeDataFromJSON(
             keyDecodingStrategy: keyDecodingStrategy,
             dateDecodingStrategy: dateDecodingStrategy,
             dataDecodingStrategy: dataDecodingStrategy,
-            nonConformingFloatDecodingStrategy: nonConformingFloatDecodingStrategy
+            nonConformingFloatDecodingStrategy: nonConformingFloatDecodingStrategy,
         ))
     @unknown default:
         break
