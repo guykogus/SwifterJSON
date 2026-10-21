@@ -27,10 +27,10 @@ jobs:
           set -euo pipefail
           case "${{ matrix.platform }}" in
             ios)
-              xcodebuild clean test -workspace . -scheme SwifterJSON -destination "platform=iOS Simulator,name=Any iOS Simulator Device"
+              xcodebuild clean test -workspace . -scheme SwifterJSON -destination "platform=iOS Simulator,name=iPhone 18 Pro,OS=27"
               ;;
             tvos)
-              xcodebuild clean test -workspace . -scheme SwifterJSON -destination "platform=tvOS Simulator,name=Any tvOS Device"
+              xcodebuild clean test -workspace . -scheme SwifterJSON -destination "platform=tvOS Simulator,name=Apple TV 4K (3rd generation),OS=27"
               ;;
             macos)
               swift test --parallel
@@ -39,10 +39,10 @@ jobs:
               xcodebuild clean test -workspace . -scheme SwifterJSON -destination "platform=macOS,variant=Mac Catalyst"
               ;;
             watchos)
-              xcodebuild clean test -workspace . -scheme SwifterJSON -destination "platform=watchOS Simulator,name=Any watchOS Device"
+              xcodebuild clean test -workspace . -scheme SwifterJSON -destination "platform=watchOS Simulator,name=Apple Watch Series 12 (42mm),OS=27"
               ;;
             visionos)
-              xcodebuild clean test -workspace . -scheme SwifterJSON -destination "platform=visionOS Simulator,name=Any visionOS Device"
+              xcodebuild clean test -workspace . -scheme SwifterJSON -destination "platform=visionOS Simulator,name=Apple Vision Pro,OS=27"
               ;;
           esac
 
@@ -71,4 +71,4 @@ jobs:
       - name: Print Swift SDK list
         run: swift sdk list
       - name: Build for WASM
-        run: swift build --swift-sdk wasm32-unknown-wasip1
+        run: swift build --swift-sdk 6.3-RELEASE-wasm32-unknown-wasip1
