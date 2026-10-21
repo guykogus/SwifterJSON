@@ -49,7 +49,7 @@ struct JSONTests {
             firstName: "Guy",
             lastName: "Kogus",
             height: 173,
-            dateOfBirth: Date(timeIntervalSince1970: 0)
+            dateOfBirth: Date(timeIntervalSince1970: 0),
         )
         static let json = JSON([
             "first_name": "Guy",
@@ -60,7 +60,7 @@ struct JSONTests {
     }
 
     @Test
-    func testNull() {
+    func `test null`() {
         #expect(!Dummy.bool.isNull)
         #expect(!Dummy.int.isNull)
         #expect(!Dummy.double.isNull)
@@ -72,7 +72,7 @@ struct JSONTests {
     }
 
     @Test
-    func testBool() {
+    func `test bool`() {
         #expect(Dummy.null.boolValue == nil)
         #expect(Dummy.int.boolValue == nil)
         #expect(Dummy.double.boolValue == nil)
@@ -86,7 +86,7 @@ struct JSONTests {
     }
 
     @Test
-    func testInt() {
+    func `test int`() {
         #expect(Dummy.null.intValue == nil)
         #expect(Dummy.bool.intValue == nil)
         #expect(Dummy.string.intValue == nil)
@@ -105,7 +105,7 @@ struct JSONTests {
     }
 
     @Test
-    func testDouble() {
+    func `test double`() {
         #expect(Dummy.null.doubleValue == nil)
         #expect(Dummy.bool.doubleValue == nil)
         #expect(Dummy.string.doubleValue == nil)
@@ -136,7 +136,7 @@ struct JSONTests {
     }
 
     @Test
-    func testString() {
+    func `test string`() {
         #expect(Dummy.null.stringValue == nil)
         #expect(Dummy.bool.stringValue == nil)
         #expect(Dummy.int.stringValue == nil)
@@ -150,7 +150,7 @@ struct JSONTests {
     }
 
     @Test
-    func testArray() {
+    func `test array`() {
         #expect(Dummy.null.arrayValue == nil)
         #expect(Dummy.bool.arrayValue == nil)
         #expect(Dummy.int.arrayValue == nil)
@@ -187,7 +187,7 @@ struct JSONTests {
     }
 
     @Test
-    func testObject() {
+    func `test object`() {
         #expect(Dummy.null.objectValue == nil)
         #expect(Dummy.bool.objectValue == nil)
         #expect(Dummy.int.objectValue == nil)
@@ -268,7 +268,7 @@ struct JSONTests {
         ]
 
         #expect(
-            try JSONDecoder().decode(JSON.self, from: #require(stringValue.data(using: .utf8))) == jsonValue
+            try JSONDecoder().decode(JSON.self, from: #require(stringValue.data(using: .utf8))) == jsonValue,
         )
 
         let encoder = JSONEncoder()
@@ -278,7 +278,7 @@ struct JSONTests {
     }
 
     @Test
-    func helperInitialisers() throws {
+    func `helper initialisers`() throws {
         #expect(JSON(true) == true)
         #expect(JSON(Int8(127)) == 127)
         #expect(try abs(#require(JSON(Float(3.141)).doubleValue) - 3.141) <= 0.0001)
@@ -290,7 +290,7 @@ struct JSONTests {
     }
 
     @Test
-    func rawValues() {
+    func `raw values`() {
         #expect(Example.object["foo"]?.rawValue as? String == "bar")
         #expect(Example.object["fib"]?.rawValue as? [Int] == [1, 1, 2, 3, 5, 8, 13])
         #expect(Example.object["life"]?.rawValue as? Int == 42)
@@ -323,21 +323,21 @@ struct JSONTests {
 
     #if canImport(Foundation)
     @Test
-    func initJsonData() throws {
+    func `init json data`() throws {
         let jsonString = "{\"foo\": \"bar\"}"
         let string = try JSON(jsonData: #require(jsonString.data(using: .utf8)))
         #expect(string.rawValue as? [String: String] == ["foo": "bar"])
     }
 
     @Test
-    func initJsonString() throws {
+    func `init json string`() throws {
         let jsonString = "{\"foo\": \"bar\"}"
         let string = try JSON(jsonString: jsonString)
         #expect(string.rawValue as? [String: String] == ["foo": "bar"])
     }
 
     @Test
-    func initEncodableValue() throws {
+    func `init encodable value`() throws {
         let encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .iso8601
         encoder.keyEncodingStrategy = .convertToSnakeCase
@@ -350,7 +350,7 @@ struct JSONTests {
     }
 
     @Test
-    func testDecode() throws {
+    func `test decode`() throws {
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
         decoder.keyDecodingStrategy = .convertFromSnakeCase

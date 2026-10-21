@@ -12,14 +12,14 @@ on:
 jobs:
   Apple:
     name: ${{ matrix.platform }}
-    runs-on: macos-15
+    runs-on: xcode-27
     timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
-        platform: ['ios', 'macos', 'tvos', 'watchos', 'visionos']
+        platform: ['ios', 'macos', 'maccatalyst', 'tvos', 'visionos', 'watchos']
     env:
-      DEVELOPER_DIR: /Applications/Xcode_26.2.0.app/Contents/Developer
+      DEVELOPER_DIR: /Applications/Xcode_27.app/Contents/Developer
     steps:
       - uses: actions/checkout@v4
       - name: Test ${{ matrix.platform }}
@@ -27,43 +27,67 @@ jobs:
           set -euo pipefail
           case "${{ matrix.platform }}" in
             ios)
-              xcodebuild clean test -workspace . -scheme SwifterJSON -destination "platform=iOS Simulator,name=iPhone 16,OS=26.2"
-              ;;
-            tvos)
-              xcodebuild clean test -workspace . -scheme SwifterJSON -destination "platform=tvOS Simulator,name=Apple TV,OS=26.2"
+              xcodebuild clean test -workspace . -scheme SwifterJSON -destination "platform=iOS Simulator,name=iPhone 18 Pro,OS=27.0"
               ;;
             macos)
               swift test --parallel
               ;;
-            watchos)
-              xcodebuild clean test -workspace . -scheme SwifterJSON -destination "platform=watchOS Simulator,name=Apple Watch Series 10 (46mm),OS=26.2"
+            maccatalyst)
+              xcodebuild clean test -workspace . -scheme SwifterJSON -destination "platform=macOS,variant=Mac Catalyst"
+              ;;
+            tvos)
+              xcodebuild clean test -workspace . -scheme SwifterJSON -destination "platform=tvOS Simulator,name=Apple TV 4K (3rd generation),OS=27.0"
               ;;
             visionos)
-              xcodebuild clean test -workspace . -scheme SwifterJSON -destination "platform=visionOS Simulator,name=Apple Vision Pro,OS=26.2"
+              xcodebuild clean test -workspace . -scheme SwifterJSON -destination "platform=visionOS Simulator,name=Apple Vision Pro,OS=27.0"
+              ;;
+            watchos)
+              watch_udid=$(
+                xcrun simctl list devices available -j |
+                  jq -er '
+                    .devices["com.apple.CoreSimulator.SimRuntime.watchOS-27-0"][]
+                    | select(.name == "Apple Watch Series 12 (42mm)")
+                    | .udid
+                  '
+              )
+
+              xcrun simctl bootstatus "$watch_udid" -b
+
+              xcodebuild clean test \
+                -workspace . \
+                -scheme SwifterJSON \
+                -destination "platform=watchOS Simulator,id=$watch_udid"
               ;;
           esac
 
   Linux:
-    runs-on: ubuntu-24.04
-    container: swift:6.0.1
+    runs-on: ubuntu-26.04
+    container: swift:6.4
     steps:
       - uses: actions/checkout@v1
       - name: Test Linux
         run: swift test --parallel
 
   Android:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     steps:
       - uses: actions/checkout@v4
       - name: Test Android
         uses: skiptools/swift-android-action@v2
 
   WASM:
-    runs-on: ubuntu-24.04
-    container: swift:6.1
+    runs-on: ubuntu-26.04
+    container: swift:6.4.1
     steps:
       - uses: actions/checkout@v4
       - name: Install Swift SDK for WebAssembly
-        run: swift sdk install "https://github.com/swiftwasm/swift/releases/download/swift-wasm-6.1-RELEASE/swift-wasm-6.1-RELEASE-wasm32-unknown-wasi.artifactbundle.zip" --checksum "7550b4c77a55f4b637c376f5d192f297fe185607003a6212ad608276928db992"
+        run: >-
+          swift sdk install
+          https://download.swift.org/swift-6.4.1-release/wasm-sdk/swift-6.4.1-RELEASE/swift-6.4.1-RELEASE_wasm.artifactbundle.tar.gz
+          --checksum 783e6128d174d9f975b4eda68be02a5960681b723ef372e6876a7c2543a365d8
+      - name: Print Swift versions
+        run: |
+          swift --version
+          swift sdk list
       - name: Build for WASM
-        run: swift build --swift-sdk wasm32-unknown-wasi
+        run: swift build --swift-sdk swift-6.4.1-RELEASE_wasm

@@ -76,7 +76,7 @@ struct JSONDecoderTests {
             encoder.nonConformingFloatEncodingStrategy = .convertToString(
                 positiveInfinity: positiveInfinity,
                 negativeInfinity: negativeInfinity,
-                nan: nan
+                nan: nan,
             )
         @unknown default:
             break
@@ -89,7 +89,7 @@ struct JSONDecoderTests {
     private func expectParity<T: Decodable & Equatable>(
         _: T.Type,
         json: JSON,
-        configure: (JSONDecoder) -> Void = { _ in }
+        configure: (JSONDecoder) -> Void = { _ in },
     ) throws {
         let decoder = JSONDecoder()
         configure(decoder)
@@ -108,7 +108,7 @@ struct JSONDecoderTests {
     private func expectBothThrow<T: Decodable>(
         _: T.Type,
         json: JSON,
-        configure: (JSONDecoder) -> Void = { _ in }
+        configure: (JSONDecoder) -> Void = { _ in },
     ) {
         let decoder = JSONDecoder()
         configure(decoder)
@@ -151,7 +151,7 @@ struct JSONDecoderTests {
     // MARK: - Single value parity
 
     @Test
-    func singleValuesParity() throws {
+    func `single values parity`() throws {
         try expectParity(Bool.self, json: .bool(true))
         try expectParity(String.self, json: .string("hello"))
         try expectParity(Int.self, json: .int(42))
@@ -162,7 +162,7 @@ struct JSONDecoderTests {
     }
 
     @Test
-    func singleValueMismatchParity() {
+    func `single value mismatch parity`() {
         // Int from non-whole Double
         struct M: Decodable { let v: Int }
         expectBothThrow(M.self, json: ["v": 1.1])
@@ -179,13 +179,13 @@ struct JSONDecoderTests {
     // MARK: - Keyed containers parity
 
     @Test
-    func keyedContainerParity() throws {
+    func `keyed container parity`() throws {
         let json: JSON = ["a": 1, "b": "two", "c": true]
         try expectParity(Simple.self, json: json)
     }
 
     @Test
-    func allKeysContainsParity() throws {
+    func `all keys contains parity`() throws {
         struct Probe: Decodable, Equatable {
             let x: Int; let y: String; let z: Bool
         }
@@ -194,7 +194,7 @@ struct JSONDecoderTests {
     }
 
     @Test
-    func missingKeyAndNullHandlingParity() throws {
+    func `missing key and null handling parity`() throws {
         struct Model: Decodable, Equatable {
             let present: Int
             let missing: String?
@@ -213,7 +213,7 @@ struct JSONDecoderTests {
     // MARK: - Nested containers parity
 
     @Test
-    func nestedContainersParity() throws {
+    func `nested containers parity`() throws {
         let json: JSON = [
             "obj": ["a": 10, "b": "bee", "c": true],
             "arr": [1, 2, 3],
@@ -222,7 +222,7 @@ struct JSONDecoderTests {
     }
 
     @Test
-    func nestedContainerTypeMismatchParity() {
+    func `nested container type mismatch parity`() {
         struct ExpectKeyedButArray: Decodable {
             init(from decoder: any Decoder) throws {
                 let container = try decoder.container(keyedBy: AnyKey.self)
@@ -243,7 +243,7 @@ struct JSONDecoderTests {
     // MARK: - Unkeyed containers parity
 
     @Test
-    func unkeyedParity() throws {
+    func `unkeyed parity`() throws {
         struct Probe: Decodable, Equatable {
             let a: Int; let b: Int; let c: String; let d: Bool; let e: String?
 
@@ -261,7 +261,7 @@ struct JSONDecoderTests {
     }
 
     @Test
-    func unkeyedOverrunAndTypeMismatchParity() {
+    func `unkeyed overrun and type mismatch parity`() {
         struct Overrun: Decodable {
             init(from decoder: any Decoder) throws {
                 var c = try decoder.unkeyedContainer()
@@ -283,7 +283,7 @@ struct JSONDecoderTests {
     // MARK: - Model parity
 
     @Test
-    func modelParity() throws {
+    func `model parity`() throws {
         struct Person: Decodable, Equatable {
             let firstName: String
             let lastName: String
@@ -302,7 +302,7 @@ struct JSONDecoderTests {
     // MARK: - Strategy parity
 
     @Test
-    func keyDecoding_convertFromSnakeCase_parity() throws {
+    func `key decoding convert from snake case parity`() throws {
         struct Model: Decodable, Equatable {
             let firstName: String
             let lastName: String
@@ -320,7 +320,7 @@ struct JSONDecoderTests {
     }
 
     @Test
-    func customKeyStrategy_parity() throws {
+    func `custom key strategy parity`() throws {
         struct Model: Decodable, Equatable { let valueHere: Int }
         let json: JSON = ["VALUE-HERE": 42]
         try expectParity(Model.self, json: json) { decoder in
@@ -336,7 +336,7 @@ struct JSONDecoderTests {
     }
 
     @Test
-    func dateStrategies_parity() throws {
+    func `date strategies parity`() throws {
         struct A: Decodable, Equatable { let a: Date }
         struct B: Decodable, Equatable { let b: Date }
         struct C: Decodable, Equatable { let c: Date }
@@ -356,7 +356,7 @@ struct JSONDecoderTests {
     }
 
     @Test
-    func dateStrategy_custom_parity() throws {
+    func `date strategy custom parity`() throws {
         struct F: Decodable, Equatable { let y: Date }
         let json: JSON = ["y": "1971-xx"]
         try expectParity(F.self, json: json) { decoder in
@@ -370,7 +370,7 @@ struct JSONDecoderTests {
     }
 
     @Test
-    func dataStrategies_parity() throws {
+    func `data strategies parity`() throws {
         struct M1: Decodable, Equatable { let d: Data }
         let bytes = Data([0x01, 0x02, 0x03])
         let b64 = bytes.base64EncodedString()
@@ -380,7 +380,7 @@ struct JSONDecoderTests {
     }
 
     @Test
-    func dataStrategy_custom_parity() throws {
+    func `data strategy custom parity`() throws {
         struct M2: Decodable, Equatable { let d: Data }
         try expectParity(M2.self, json: ["d": .string("abc")]) { decoder in
             decoder.dataDecodingStrategy = .custom { decoder in
@@ -392,7 +392,7 @@ struct JSONDecoderTests {
     }
 
     @Test
-    func nonConformingFloat_convert_parity() throws {
+    func `non conforming float convert parity`() throws {
         struct InfinityModel: Decodable, Equatable { let a: Double; let b: Double }
         let infinityJSON: JSON = ["a": .string("INF"), "b": .string("-INF")]
         try expectParity(InfinityModel.self, json: infinityJSON) { decoder in
@@ -413,7 +413,7 @@ struct JSONDecoderTests {
     }
 
     @Test
-    func nonConformingFloat_throw_parity() {
+    func `non conforming float throw parity`() {
         struct M: Decodable { let a: Double }
         expectBothThrow(M.self, json: ["a": .string("INF")]) { decoder in
             decoder.nonConformingFloatDecodingStrategy = .throw
