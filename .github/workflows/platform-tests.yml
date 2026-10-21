@@ -42,8 +42,21 @@ jobs:
               xcodebuild clean test -workspace . -scheme SwifterJSON -destination "platform=visionOS Simulator,name=Apple Vision Pro,OS=27.0"
               ;;
             watchos)
-              xcrun simctl list devices available
-              xcodebuild clean test -workspace . -scheme SwifterJSON -destination "platform=watchOS Simulator,name=Apple Watch Series 12 (42mm),OS=27.0"
+              watch_udid=$(
+                xcrun simctl list devices available -j |
+                  jq -er '
+                    .devices["com.apple.CoreSimulator.SimRuntime.watchOS-27-0"][]
+                    | select(.name == "Apple Watch Series 12 (42mm)")
+                    | .udid
+                  '
+              )
+
+              xcrun simctl bootstatus "$watch_udid" -b
+
+              xcodebuild clean test \
+                -workspace . \
+                -scheme SwifterJSON \
+                -destination "platform=watchOS Simulator,id=$watch_udid"
               ;;
           esac
 
